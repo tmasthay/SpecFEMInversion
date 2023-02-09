@@ -105,7 +105,7 @@ rm -f helper_functions.py
 ln -s ../helper_functions.py
 
 rm -f change_simulation_type.pl
-ln -s ../../../utils/change_simulation_type.pl
+ln -s $SPEC/utils/change_simulation_type.pl
 
 rm -f create_STATIONS_file.py
 ln -s ../create_STATIONS_file.py

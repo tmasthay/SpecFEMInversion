@@ -26,8 +26,8 @@ cd $currentdir
 mkdir -p bin
 cd bin/
 rm -f xmeshfem2D xspecfem2D
-ln -s ../../../../bin/xmeshfem2D
-ln -s ../../../../bin/xspecfem2D
+ln -s $SPEC/bin/xmeshfem2D
+ln -s $SPEC/bin/xspecfem2D
 cd ../
 
 # stores setup
