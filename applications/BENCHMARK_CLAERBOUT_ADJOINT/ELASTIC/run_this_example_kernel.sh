@@ -8,6 +8,9 @@ currentdir=`pwd`
 
 cd $currentdir
 
+# Make sure to restore previous state
+cp DATA/Par_file_orig DATA/Par_file
+
 ##############################################
 ## Elastic benchmark
 
