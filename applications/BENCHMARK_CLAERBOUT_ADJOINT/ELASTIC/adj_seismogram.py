@@ -1,1 +1,0 @@
-../adj_seismogram.py
