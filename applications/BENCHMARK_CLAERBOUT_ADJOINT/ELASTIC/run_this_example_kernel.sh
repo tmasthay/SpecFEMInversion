@@ -37,12 +37,12 @@ echo
 # SH-wave simulation setup
 if [ "$SIM_TYPE" == "3" ]; then
   # source
-  sed -i "s:^source_type .*:source_type  = 1:" DATA/SOURCE
-  sed -i "s:^time_function_type .*:time_function_type  = 1:" DATA/SOURCE
-  sed -i "s:^factor .*:factor  = 1.d10:" DATA/SOURCE
+  sed -i '' "s/^source_type .*/source_type  = 1/" $(pwd)/DATA/SOURCE
+  sed -i '' "s/^time_function_type .*/time_function_type  = 1/" $(pwd)DATA/SOURCE
+  sed -i '' "s/^factor .*/factor  = 1.d10/" $(pwd)/DATA/SOURCE
   # Par_file
-  sed -i "s:^P_SV .*:P_SV  = .false.:" DATA/Par_file
-  sed -i "s:^NSTEP .*:NSTEP  = 900:" DATA/Par_file
+  sed -i '' "s/^P_SV .*/P_SV  = .false./" DATA/Par_file
+  sed -i '' "s/^NSTEP .*/NSTEP  = 900/" DATA/Par_file
   # checks param selection for SH-wave simulations
   if [ "$perturb_param" == "vp" ]; then
     # switch to vs perturbations instead
@@ -131,7 +131,7 @@ echo
 ./change_simulation_type.pl -f
 
 # saving model files
-sed -i "s:^SAVE_MODEL .*=.*:SAVE_MODEL = gll:" ./DATA/Par_file
+sed -i '' "s/^SAVE_MODEL .*=.*/SAVE_MODEL = gll/" DATA/Par_file
 
 ./run_this_example.sh > output.log
 
@@ -188,8 +188,8 @@ echo
 ./change_simulation_type.pl -F
 
 # Par_file using GLL model
-sed -i "s:^MODEL .*=.*:MODEL = gll:" ./DATA/Par_file
-sed -i "s:^SAVE_MODEL .*=.*:SAVE_MODEL = .false.:" ./DATA/Par_file
+sed -i '' "s/^MODEL .*=.*/MODEL = gll/" DATA/Par_file
+sed -i '' "s/^SAVE_MODEL .*=.*/SAVE_MODEL = .false./" DATA/Par_file
 
 ./run_this_example.sh > output.log
 
