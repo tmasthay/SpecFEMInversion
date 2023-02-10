@@ -93,16 +93,16 @@ mkdir -p MODELS/initial_model MODELS/target_model
 mkdir -p KERNELS
 rm -rf KERNELS/*
 
-# rm -f adj_seismogram.py
-# ln -s ../adj_seismogram.py
-# rm -f model_add_Gaussian_perturbation.py
-# ln -s ../model_add_Gaussian_perturbation.py
-# rm -f model_update.py
-# ln -s ../model_update.py
-# rm -f kernel_evaluation_postprocessing.py
-# ln -s ../kernel_evaluation_postprocessing.py
-# rm -f helper_functions.py
-# ln -s ../helper_functions.py
+rm -f adj_seismogram.py
+ln -s ../adj_seismogram.py
+rm -f model_add_Gaussian_perturbation.py
+ln -s ../model_add_Gaussian_perturbation.py
+rm -f model_update.py
+ln -s ../model_update.py
+rm -f kernel_evaluation_postprocessing.py
+ln -s ../kernel_evaluation_postprocessing.py
+rm -f helper_functions.py
+ln -s ../helper_functions.py
 
 rm -f change_simulation_type.pl
 ln -s $SPEC/utils/change_simulation_type.pl
