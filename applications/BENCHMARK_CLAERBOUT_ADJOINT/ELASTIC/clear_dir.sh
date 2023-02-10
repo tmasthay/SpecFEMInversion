@@ -10,4 +10,4 @@ rm change*.pl
 rm -rf bin
 
 #restore previous state of DATA/Par_file
-cp DATA/Par_file_orig DATA/Par_file
+cp DATA/Par_file_ref DATA/Par_file
