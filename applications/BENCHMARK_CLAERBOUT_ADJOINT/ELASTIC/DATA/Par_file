@@ -10,11 +10,11 @@ title                           = Test elastic
 # forward or adjoint simulation
 # 1 = forward, 2 = adjoint, 3 = both simultaneously
 # note: 2 is purposely UNUSED (for compatibility with the numbering of our 3D codes)
-SIMULATION_TYPE                 = 3
+SIMULATION_TYPE                 = 1
 # 0 = regular wave propagation simulation, 1/2/3 = noise simulation
 NOISE_TOMOGRAPHY                = 0
 # save the last frame, needed for adjoint simulation
-SAVE_FORWARD                    = .false.
+SAVE_FORWARD                    = .true.
 
 # parameters concerning partitioning
 NPROC                           = 1              # number of processes
