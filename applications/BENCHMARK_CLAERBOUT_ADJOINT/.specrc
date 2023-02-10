@@ -1,0 +1,98 @@
+#!/bin/zsh
+
+#path names
+export SPEC=/Users/tyler/spec/specfem2d
+export SPEC_BIN=$SPEC/bin
+export SPEC_DATA=$SPEC/DATA
+export SPEC_OUT=$SPEC/OUTPUT_FILES
+
+#aliases
+alias spsrc='source ~/.specrc'
+alias spjpg='open $SPEC_OUT/*.jpg'
+alias sprc='vi ~/.specrc'
+alias sppar='vi $SPEC_DATA/Par_file'
+
+#functions
+spsetup(){
+    mkdir -p bin
+    cd bin
+    rm -f x*
+    ln -s $SPEC/bin/xspecfem2D
+    ln -s $SPEC/bin/xmeshfem2D
+    ln -s $SPEC/bin/xcheck_quality_external_mesh
+    ln -s $SPEC/bin/xadj_seismogram
+    ln -s $SPEC/bin/xconvolve_source_timefunction
+    cd ..
+}
+
+sprun(){
+    bin/xspecfem2D
+}
+
+spmesh(){
+    bin/xmeshfem2D
+}
+
+spcheck_mesh(){
+    bin/xcheck_quality_external_mesh
+}
+
+spadj(){
+    bin/xadj_seismogram
+}
+
+spconv(){
+    bin/xconvolve_source_timefunction
+}
+
+#See binaries in SPECFEM2D
+spbin(){
+    ls $SPEC_BIN
+}
+
+#See data
+spdata(){
+    ls $SPEC_DATA
+}
+
+#see config info
+spsee(){
+    echo "~/.specrc"
+}
+
+#See SPECFEM envrionment variables
+spenv(){
+    env | grep "SPEC"
+}
+
+spcmds(){
+    cat ~/.specrc | grep ".*(){" | sed 's/(){//'
+}
+
+spgift(){
+    DIR=$1
+    if [[ $DIR == "" ]]
+    then
+        DIR=$SPEC_OUT
+    fi
+    if [[ ! -f $DIR/movie.gif ]] 
+    then
+        JPG_FILES=$(ls -t $DIR/*.jpg)
+        convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
+    fi
+    open $DIR/movie.gif
+}
+
+spgif(){
+    DIR=$1
+    if [[ $DIR == "" ]]
+    then
+        DIR=$(pwd)/OUTPUT_FILES
+    fi
+    if [[ ! -f $DIR/movie.gif ]]
+    then
+        JPG_FILES=$(ls -t $DIR/*.jpg)
+        convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
+    fi
+    open $DIR/movie.gif
+}
