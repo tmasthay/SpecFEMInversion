@@ -83,7 +83,7 @@ def adj_seismogram_get_files(NSTEP,DT,NPROC,SIM_TYPE):
 #------------------------------------------------------------------------------------------
 #
 
-def adj_seismogram(filename_syn,filename_dat):
+def adj_seismogram(filename_syn,filename_dat,adj_routine=(lambda x,y: x-y)):
     """
     creates adjoint seismograms
     """
@@ -106,7 +106,7 @@ def adj_seismogram(filename_syn,filename_dat):
     dat = hf.read_SU_file(filename_dat)
 
     # adjoint source f^adj = (s - d)
-    adj = syn - dat
+    adj = adj_routine(syn, dat)
 
     # misfit values
     print("misfit:")
