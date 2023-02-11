@@ -21,8 +21,18 @@ def quantile(U, p, dt):
         q += 1
     return Q
 
-def wass_adjoint(u,d,dt):
-    Q = quantile(cumulative(d), cumulative(u), dt)
+def transport_distance(d,u,dt):
     T = (len(u)-1)*dt
     t = np.linspace(0,T,len(u))
-    return T**2 - t**2 + np.array(list(accumulate(Q)))
+    return quantile(cumulative(d), cumulative(u), dt) - t 
+
+def wass_adjoint(**kw):
+    Q = kw.get('Q', None)
+    if( Q == None ):
+        Q = transport_distance(kw['d'], kw['u'], kw['dt'])
+    return kw['dt'] * np.array(list(accumulate(Q))), Q
+
+def wass_adjoint_and_eval(**kw):
+    adj, Q = wass_adjoint(**kw)
+    return adj[-1]**2 / kw['dt'], adj, Q
+    
