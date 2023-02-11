@@ -2,8 +2,9 @@ import numpy as np
 from itertools import accumulate
 
 def cumulative(u):
-    v = np.array(list(accumulate(u)))
-    return v / v[-1]
+    v = list(accumulate(u))
+    v.insert(0,0)
+    return np.array(v) / v[-1]
 
 def quantile(U, p, dt):
     Q = np.zeros(int(np.ceil(1.0/dp + 1)))
@@ -22,4 +23,4 @@ def quantile(U, p, dt):
 def wass_adjoint(u,d,dt):
     alpha = 0.9
     du = []
-    D = quantile
+    Q = quantile
