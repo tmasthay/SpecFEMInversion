@@ -41,8 +41,10 @@ def test_wass_adjoint():
 
 def test_wass_adjoint_and_eval():
     tol = 1e-5
-    d = np.random.random(100)
-    u = d
+    mu = 0.0
+    t = np.linspace(-10,10,int(1e5))
+    d = 1.0 / np.sqrt(2 * np.pi) * np.exp(-t**2 / 2)
+    u = 1.0 / np.sqrt(2 * np.pi) * np.exp(-(t-mu)**2 / 2)
     dist,adj,Q = wass_adjoint_and_eval(d=d,u=u,dt=1.0)
-    err = dist
+    err = dist - mu**2
     assert err <= tol, "Incorrect Wasserstein adjoint+eval: (%.2e, %.2e)"%(err, tol)

@@ -33,6 +33,22 @@ def wass_adjoint(**kw):
     return kw['dt'] * np.array(list(accumulate(Q))), Q
 
 def wass_adjoint_and_eval(**kw):
-    adj, Q = wass_adjoint(**kw)
-    return adj[-1]**2 / kw['dt'], adj, Q
+    if( 'multi' in kw.keys() ):
+        evaluations = []
+        adjoints = []
+        transports = []
+        Q = kw.get('Q', None)
+        assert( Q == None )
+        assert( len(kw['u']) == len(kw['d']) )
+        assert( type(kw['dt']) == float )
+        for (dd,uu) in zip(kw['u'], kw['d']):
+            curr_eval, curr_adj, curr_Q = wass_adjoint_and_eval(d=dd, u=uu, 
+                dt=kw['dt'])
+            evaluations.append(curr_eval)
+            adjoints.append(curr_adj)
+            transports.append(curr_Q)
+        return np.array(evaluations), np.array(adjoints), np.array(transports)
+    else:
+        adj, Q = wass_adjoint(**kw)
+        return adj[-1]**2 / kw['dt'], adj, Q
     
