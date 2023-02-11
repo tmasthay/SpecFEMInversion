@@ -55,5 +55,5 @@ def wass_adjoint_and_eval(**kw):
         return np.array(evaluations), np.array(adjoints), np.array(transports)
     else:
         adj, Q = wass_adjoint(**kw)
-        return adj[-1]**2 / kw['dt'], adj, Q
+        return sum(Q**2) * kw['dt'], adj, Q
     

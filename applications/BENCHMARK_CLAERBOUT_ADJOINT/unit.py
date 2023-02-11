@@ -65,10 +65,29 @@ def test_wass_adjoint():
 
 def test_wass_adjoint_and_eval():
     tol = 1e-5
+
     mu = 0.0
-    t = np.linspace(-10,10,int(1e5))
+    a = 10.0
+    nt = int(1e5)
+    t = np.linspace(-a,a,nt)
+    dt = t[1] - t[0]
+
     d = 1.0 / np.sqrt(2 * np.pi) * np.exp(-t**2 / 2)
     u = 1.0 / np.sqrt(2 * np.pi) * np.exp(-(t-mu)**2 / 2)
-    dist,adj,Q = wass_adjoint_and_eval(d=d,u=u,dt=1.0,ot=-10.0)
+    dist,adj,Q = wass_adjoint_and_eval(d=d,u=u,dt=dt,ot=-a)
     err = dist - mu**2
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.plot(t, d, label='data')
+    plt.plot(t, u, label='synthetic')
+    plt.legend()
+
+    plt.subplot(2,1,2)
+    plt.plot(t, Q, label='transport distance')
+    plt.plot(t, mu * np.ones(len(t)), label='reference')
+    plt.legend()
+
+    plt.savefig('unit_test_plots/wasserstein/test_wass_adjoint_and_eval.pdf')
+
     assert err <= tol, "Incorrect Wasserstein adjoint+eval: (%.2e, %.2e)"%(err, tol)
