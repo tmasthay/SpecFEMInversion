@@ -1,9 +1,9 @@
 import numpy as np
 from itertools import accumulate
 
-def cumulative(u):
+def cumulative(u, prepend_zero=False):
     v = list(accumulate(u))
-    v.insert(0,0)
+    if( prepend_zero ): v.insert(0,0)
     return np.array(v) / v[-1]
 
 def quantile(U, p, dt):
