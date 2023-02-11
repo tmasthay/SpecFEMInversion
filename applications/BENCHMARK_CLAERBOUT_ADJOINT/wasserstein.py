@@ -8,19 +8,21 @@ def cumulative(u):
 
 def quantile(U, p, dt):
     Q = np.zeros(len(p))
-    q = 1
+    q = 0
     t = 0
     for pp in p:
         if( t >= len(U) - 1 ): Q[q] = (len(U) - 1) * dt
+        elif( U[t] == 0.0 ): Q[q] = 0.0
         else:
             while( U[t+1] < pp and t < len(U) ): t += 1
             if( t == len(U) - 1 ): Q[q] = (len(U) - 1)*dt
             else:
-                Q[q] = dt * (t + (p-U[t]) / (U[t+1] - U[t]))
+                Q[q] = dt * (t + (pp-U[t]) / (U[t+1] - U[t]))
         q += 1
     return Q
 
 def wass_adjoint(u,d,dt):
-    alpha = 0.9
-    du = []
-    Q = quantile
+    Q = quantile(cumulative(d), cumulative(u), dt)
+    T = (len(u)-1)*dt
+    t = np.linspace(0,T,len(u))
+    return T**2 - t**2 + np.array(list(accumulate(Q)))
