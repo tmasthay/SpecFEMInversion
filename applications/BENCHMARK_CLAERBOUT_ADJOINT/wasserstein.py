@@ -6,31 +6,36 @@ def cumulative(u, prepend_zero=False):
     if( prepend_zero ): v.insert(0,0)
     return np.array(v) / v[-1]
 
-def quantile(U, p, dt):
+def quantile(U, p, dt, ot):
     Q = np.zeros(len(p))
     q = 0
     t = 0
     for pp in p:
-        if( t >= len(U) - 1 ): Q[q] = (len(U) - 1) * dt
-        elif( U[t] == 0.0 ): Q[q] = 0.0
+        if( t >= len(U) - 1 ): Q[q] = ot + (len(U) - 1) * dt
+        #elif( U[t] == 0.0 ): Q[q] = ot
         else:
             while( U[t+1] < pp and t < len(U) ): t += 1
             if( t == len(U) - 1 ): Q[q] = (len(U) - 1)*dt
             else:
-                Q[q] = dt * (t + (pp-U[t]) / (U[t+1] - U[t]))
+                Q[q] = ot + dt * (t + (pp-U[t]) / (U[t+1] - U[t]))
         q += 1
     return Q
 
-def transport_distance(d,u,dt):
+def transport_distance(d,u,dt,ot):
     T = (len(u)-1)*dt
     t = np.linspace(0,T,len(u))
-    return quantile(cumulative(d), cumulative(u), dt) - t 
+    D = cumulative(d)
+    U = cumulative(u)
+    Q = quantile(D,U,dt,ot)
+    print('\n'.join([str(e) for e in D-U]))
+    return Q - t 
 
 def wass_adjoint(**kw):
     Q = kw.get('Q', None)
     if( Q == None ):
-        Q = transport_distance(kw['d'], kw['u'], kw['dt'])
-    return kw['dt'] * np.array(list(accumulate(Q))), Q
+        Q = transport_distance(kw['d'], kw['u'], kw['dt'], kw['ot'])
+    integral = np.flip(list(accumulate(np.flip(Q))))
+    return kw['dt'] * integral, Q
 
 def wass_adjoint_and_eval(**kw):
     if( 'multi' in kw.keys() ):
