@@ -7,7 +7,7 @@ def cumulative(u):
     return np.array(v) / v[-1]
 
 def quantile(U, p, dt):
-    Q = np.zeros(int(np.ceil(1.0/dp + 1)))
+    Q = np.zeros(len(p))
     q = 1
     t = 0
     for pp in p:
