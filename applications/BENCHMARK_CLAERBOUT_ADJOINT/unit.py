@@ -7,26 +7,31 @@ import os
 os.system('mkdir -p unit_test_plots/')
 os.system('mkdir -p unit_test_plots/wasserstein/')
 
+def get_gauss(mu, sig, a, b, nt):
+    nt = int(nt)
+    t = np.linspace(a, b, nt)
+    dt = t[1] - t[0]
+    u = np.exp(-(t-mu)**2 / (2 * sig**2))
+    C = np.trapz(u) * dt
+    return 1.0 / C * u, t, dt, a
+
+
 def test_cdf():
     tol = 1e-4
-    t = np.linspace(-10,10,int(1e5))
-    u = 1.0 / np.sqrt(2 * np.pi) * np.exp(-t**2 / 2)
+    u, t, dt, ot = get_gauss(mu=0.0, sig=1.0, a=-10.0, b=10.0, nt=1e5)
     U = cumulative(u, False)
     ref = 0.5 * ( 1.0 + erf(t / np.sqrt(2)) )
-    dt = t[1] - t[0]
     err = np.sqrt(dt) * np.linalg.norm(U - ref)
     assert err <= tol, "Incorrect CDF evalulation, (%.2e, %.2e)"%(err, tol)
 
 def test_quantile():
-    tol = 1e-2
-    t = np.linspace(-10,10,int(2e7))
-    u = 1.0 / np.sqrt(2 * np.pi) * np.exp(-t**2 / 2)
+    tol = 2e-3
+    u,t,dt,ot = get_gauss(0.0, 1.0, -10.0, 10.0, 1e4)
     U = cumulative(u, True)
-    p = np.linspace(0.01,0.99,100)
-    dt = t[1] - t[0]
-    Q = quantile(U, p, dt, ot=-10.0)
+    p = np.linspace(0.01,0.99,int(1e6))
+    Q = quantile(U, p, dt, ot=ot)
     ref = np.sqrt(2) * erfinv(2 * p - 1)
-    err = np.sqrt(dt) * np.linalg.norm(Q - ref)
+    err = max(Q - ref)
 
     plt.figure()
     plt.subplot(2,2,1)
@@ -50,42 +55,57 @@ def test_quantile():
 
 def test_transport_distance():
     tol = 1e-5
-    d = np.random.random(100)
-    u = d
-    F = transport_distance(d,u,1.0,0.0)
-    assert max(F) <= tol, "Incorrect Wasserstein kernel: (%.2e, %.2e)"%(max(F), tol)
+    u, t, dt, ot = get_gauss(mu=0.0, sig=1.0, a=-10.0, b=10.0, nt=100)
+    d, t2, dt2, ot2 = get_gauss(mu=0.0, sig=1.0, a=-10.0, b=10.0, nt=100)
+    assert( (t == t2).all() )
+    F = transport_distance(d=d,u=u,dt=dt,ot=ot)
+    assert max(F[0]) <= tol, "Incorrect Wasserstein kernel: (%.2e, %.2e)"%(max(F), tol)
 
 def test_wass_adjoint():
     tol = 1e-5
-    d = np.random.random(100)
-    u = d
-    adj,Q = wass_adjoint(d=d,u=u,dt=1.0,ot=0.0)
+    restrict=0.1
+    d, t, dt, ot = get_gauss(mu=0.0, sig=1.0, a=-10.0, b=10.0, nt=100)
+    u, t2, dt2, ot2 = get_gauss(mu=0.0, sig=1.0, a=-10.0, b=10.0, nt=100)
+    assert( (t == t2).all() )
+    adj,Q,_,_ = wass_adjoint(d=d,u=u,dt=dt,ot=ot,restrict=restrict)
     err = np.linalg.norm(adj)
     assert err <= tol, "Incorrect Wasserstein adjoint: (%.2e, %.2e)"%(err, tol)
 
 def test_wass_adjoint_and_eval():
     tol = 1e-5
 
-    mu = 0.0
-    a = 10.0
-    nt = int(1e5)
-    t = np.linspace(-a,a,nt)
-    dt = t[1] - t[0]
+    mu = 3.0
+    restrict = 0.25
+    nt = 1000
 
-    d = 1.0 / np.sqrt(2 * np.pi) * np.exp(-t**2 / 2)
-    u = 1.0 / np.sqrt(2 * np.pi) * np.exp(-(t-mu)**2 / 2)
-    dist,adj,Q = wass_adjoint_and_eval(d=d,u=u,dt=dt,ot=-a)
+    u, t, dt, ot = get_gauss(mu=0.0, sig=1.0, a=-10.0, b=10.0, nt=nt)
+    d, t2, dt2, ot2 = get_gauss(mu=mu, sig=1.0, a=-10.0, b=10.0, nt=nt)
+    assert( (t == t2).all() )
+
+    dist,adj,Q,D,U = wass_adjoint_and_eval(d=d,u=u,dt=dt,ot=ot,restrict=restrict)
     err = dist - mu**2
 
+    i1,i2 = cut(len(t), restrict)
+    print('%d,%d'%(i1,i2))
     plt.figure()
-    plt.subplot(2,1,1)
+    plt.subplot(2,2,1)
     plt.plot(t, d, label='data')
     plt.plot(t, u, label='synthetic')
     plt.legend()
 
-    plt.subplot(2,1,2)
-    plt.plot(t, Q, label='transport distance')
-    plt.plot(t, mu * np.ones(len(t)), label='reference')
+    plt.subplot(2,2,2)
+    plt.plot(t[i1:i2], Q, label='Transport plan')
+    plt.plot(t[i1:i2], Q**2*u[i1:i2], label='Transport normalized')
+    #plt.plot(U, mu * np.ones(len(t)), label='reference')
+    plt.legend()
+
+    plt.subplot(2,2,3)
+    plt.plot(t[i1:i2], adj, label='W2 adjoint')
+    plt.plot(t[i1:i2], u[i1:i2] - d[i1:i2], label='L2 adjoint')
+    plt.legend()
+
+    plt.subplot(2,2,4)
+    plt.plot(t[i1:i2], adj - Q**2, label='accumulator')
     plt.legend()
 
     plt.savefig('unit_test_plots/wasserstein/test_wass_adjoint_and_eval.pdf')

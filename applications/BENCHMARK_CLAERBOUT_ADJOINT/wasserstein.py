@@ -2,10 +2,11 @@ import numpy as np
 from itertools import accumulate
 
 def cut(n,restrict):
-    if( type(restrict) == None ):
+    if( type(restrict) == type(None) ):
         return 0,n
-    if( type(restrict) == float ):
+    if( type(restrict) == float or len(restrict) == 1 ):
         restrict = [restrict, 1.0 - restrict]
+    p,q = restrict
     assert( p <= q and p <= 1.0 and q <= 1.0 )
     i1 = int(p * n)
     i2 = int(q * n) + 1
@@ -52,12 +53,12 @@ def wass_adjoint(**kw):
     if( Q == None ):
         Q, D, U = transport_distance(kw['d'], kw['u'], kw['dt'], kw['ot'])
     #integral = np.flip(list(accumulate(np.flip(Q))))
-    integral = kw['dt'] * accumulate_adjoint(Q)
     i1, i2 = cut(len(Q), kw.get('restrict', None))
-    return integral[i1:i2],Q[i1:i2],D[i1:i2],U[i1:i2]
+    Q,D,U = Q[i1:i2],D[i1:i2],U[i1:i2]
+    adjoint = Q**2 + 2 * kw['dt'] * accumulate_adjoint(Q*kw['u'][i1:i2])
+    return adjoint,Q,D,U
 
 def wass_adjoint_and_eval(**kw):
-    restrict = kw.get('restrict', None)
     if( 'multi' in kw.keys() ):
         data = [ [], [], [], [], [] ]
         adjoints = []
@@ -76,9 +77,9 @@ def wass_adjoint_and_eval(**kw):
         return [np.array(e) for e in data]
     else:
         adj, Q, D, U = wass_adjoint(**kw)
-        i1,i2 = cut(len(Q), restrict)
-        return np.trapz(Q[i1:i2]**2) * kw['dt'], \
-            adj[i1:i2], \
-            Q[i1:i2], \
-            D[i1:i2], \
+        i1,i2 = cut(len(kw['u']), kw.get('restrict', None))
+        return np.trapz(Q**2*kw['u'][i1:i2]) * kw['dt'], \
+            adj, \
+            Q, \
+            D, \
             U
