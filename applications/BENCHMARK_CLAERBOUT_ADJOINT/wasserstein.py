@@ -9,15 +9,19 @@ def cumulative(u, prepend_zero=False):
 def quantile(U, p, dt, ot):
     Q = np.zeros(len(p))
     q = 0
-    t = 0
+    t = np.where(U > 0)[0][0]
     for pp in p:
         if( t >= len(U) - 1 ): Q[q] = ot + (len(U) - 1) * dt
-        #elif( U[t] == 0.0 ): Q[q] = ot
+        elif( U[t] == 0.0 ): Q[q] = ot
         else:
             while( U[t+1] < pp and t < len(U) ): t += 1
             if( t == len(U) - 1 ): Q[q] = (len(U) - 1)*dt
             else:
-                Q[q] = ot + dt * (t + (pp-U[t]) / (U[t+1] - U[t]))
+                tol = 1e-16
+                if( abs(U[t+1] - U[t]) >= tol ):
+                    Q[q] = ot + dt * (t + (pp-U[t]) / (U[t+1] - U[t]))
+                else:
+                    Q[q] = ot + dt * t
         q += 1
     return Q
 
@@ -27,33 +31,34 @@ def transport_distance(d,u,dt,ot):
     D = cumulative(d)
     U = cumulative(u)
     Q = quantile(D,U,dt,ot)
-    print('\n'.join([str(e) for e in D-U]))
-    return Q - t 
+    print(U[-2])
+    return Q-t, D, U
 
 def wass_adjoint(**kw):
     Q = kw.get('Q', None)
     if( Q == None ):
-        Q = transport_distance(kw['d'], kw['u'], kw['dt'], kw['ot'])
+        Q, D, U = transport_distance(kw['d'], kw['u'], kw['dt'], kw['ot'])
     integral = np.flip(list(accumulate(np.flip(Q))))
-    return kw['dt'] * integral, Q
+    return kw['dt'] * integral, Q, D, U
 
 def wass_adjoint_and_eval(**kw):
     if( 'multi' in kw.keys() ):
-        evaluations = []
+        data = [ [], [], [], [], [] ]
         adjoints = []
         transports = []
+        data = []
+        synthetic = []
         Q = kw.get('Q', None)
         assert( Q == None )
         assert( len(kw['u']) == len(kw['d']) )
         assert( type(kw['dt']) == float )
         for (dd,uu) in zip(kw['u'], kw['d']):
-            curr_eval, curr_adj, curr_Q = wass_adjoint_and_eval(d=dd, u=uu, 
+            curr = wass_adjoint_and_eval(d=dd, u=uu, 
                 dt=kw['dt'])
-            evaluations.append(curr_eval)
-            adjoints.append(curr_adj)
-            transports.append(curr_Q)
-        return np.array(evaluations), np.array(adjoints), np.array(transports)
+            for i in range(len(data)):
+                data[i].append(curr[i])
+        return [np.array(e) for e in data]
     else:
-        adj, Q = wass_adjoint(**kw)
-        return sum(Q**2) * kw['dt'], adj, Q
+        adj, Q, D, U = wass_adjoint(**kw)
+        return sum(Q**2) * kw['dt'], adj, Q, D, U
     
