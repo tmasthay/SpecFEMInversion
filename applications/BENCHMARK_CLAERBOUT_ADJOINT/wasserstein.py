@@ -6,19 +6,19 @@ def cumulative(u, prepend_zero=False):
     if( prepend_zero ): v.insert(0,0)
     return np.array(v) / v[-1]
 
-def quantile(U, p, dt, ot):
+def quantile(U, p, dt, ot, div_tol=1e-16, tail_tol=1e-30):
     Q = np.zeros(len(p))
     q = 0
     t = np.where(U > 0)[0][0]
     for pp in p:
-        if( t >= len(U) - 1 ): Q[q] = ot + (len(U) - 1) * dt
+        if( t >= len(U) - 1 or pp > 1-tail_tol ): 
+            Q[q] = ot + (len(U) - 1) * dt
         elif( U[t] == 0.0 ): Q[q] = ot
         else:
             while( U[t+1] < pp and t < len(U) ): t += 1
             if( t == len(U) - 1 ): Q[q] = (len(U) - 1)*dt
             else:
-                tol = 1e-16
-                if( abs(U[t+1] - U[t]) >= tol ):
+                if( abs(U[t+1] - U[t]) >= div_tol ):
                     Q[q] = ot + dt * (t + (pp-U[t]) / (U[t+1] - U[t]))
                 else:
                     Q[q] = ot + dt * t
@@ -26,12 +26,11 @@ def quantile(U, p, dt, ot):
     return Q
 
 def transport_distance(d,u,dt,ot):
-    T = (len(u)-1)*dt
-    t = np.linspace(0,T,len(u))
+    T = ot + (len(u)-1)*dt
+    t = np.linspace(ot,T,len(u))
     D = cumulative(d)
     U = cumulative(u)
     Q = quantile(D,U,dt,ot)
-    print(U[-2])
     return Q-t, D, U
 
 def wass_adjoint(**kw):
