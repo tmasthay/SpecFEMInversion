@@ -83,7 +83,7 @@ def adj_seismogram_get_files(NSTEP,DT,NPROC,SIM_TYPE):
 #------------------------------------------------------------------------------------------
 #
 
-def adj_seismogram(filename_syn,filename_dat,adj_routine=(lambda x,y: x-y)):
+def adj_seismogram(filename_syn,filename_dat, mode='l2', **kw):
     """
     creates adjoint seismograms
     """
@@ -105,17 +105,21 @@ def adj_seismogram(filename_syn,filename_dat,adj_routine=(lambda x,y: x-y)):
     syn = hf.read_SU_file(filename_syn)
     dat = hf.read_SU_file(filename_dat)
 
+        # sampling rate given in microseconds
+    DT = hf.sampling_DT * 1.e-6
+    print("  trace time steps: DT = ",DT,"(s)")
+
     # adjoint source f^adj = (s - d)
-    adj = adj_routine(syn, dat)
+    if( mode.lower() == 'l2' ):
+        adj = syn - dat
+    else:
+        raise ValueError('Mode "%s" not supported'%mode)
+        
 
     # misfit values
     print("misfit:")
     diff_max = np.abs(adj).max()
-    print("  maximum waveform difference (syn - dat) = ",diff_max)
-
-    # sampling rate given in microseconds
-    DT = hf.sampling_DT * 1.e-6
-    print("  trace time steps: DT = ",DT,"(s)")
+    print("  maximum adjoint value (syn - dat) = ",diff_max)
 
     # total misfit
     total_misfit = 0.0
