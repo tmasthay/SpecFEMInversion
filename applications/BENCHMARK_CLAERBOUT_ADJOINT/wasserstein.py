@@ -1,6 +1,16 @@
 import numpy as np
 from itertools import accumulate
 
+def cut(n,restrict):
+    if( type(restrict) == None ):
+        return 0,n
+    if( type(restrict) == float ):
+        restrict = [restrict, 1.0 - restrict]
+    assert( p <= q and p <= 1.0 and q <= 1.0 )
+    i1 = int(p * n)
+    i2 = int(q * n) + 1
+    return i1,i2
+
 def cumulative(u, prepend_zero=False):
     v = list(accumulate(u))
     if( prepend_zero ): v.insert(0,0)
@@ -33,14 +43,21 @@ def transport_distance(d,u,dt,ot):
     Q = quantile(D,U,dt,ot)
     return Q-t, D, U
 
+def accumulate_adjoint(g):
+    u = np.flip(np.cumsum(np.flip(g)))
+    return np.append(0.5 * (u[:-1] + u[1:] - g[-1]), 0.0)
+
 def wass_adjoint(**kw):
     Q = kw.get('Q', None)
     if( Q == None ):
         Q, D, U = transport_distance(kw['d'], kw['u'], kw['dt'], kw['ot'])
-    integral = np.flip(list(accumulate(np.flip(Q))))
-    return kw['dt'] * integral, Q, D, U
+    #integral = np.flip(list(accumulate(np.flip(Q))))
+    integral = kw['dt'] * accumulate_adjoint(Q)
+    i1, i2 = cut(len(Q), kw.get('restrict', None))
+    return integral[i1:i2],Q[i1:i2],D[i1:i2],U[i1:i2]
 
 def wass_adjoint_and_eval(**kw):
+    restrict = kw.get('restrict', None)
     if( 'multi' in kw.keys() ):
         data = [ [], [], [], [], [] ]
         adjoints = []
@@ -59,5 +76,9 @@ def wass_adjoint_and_eval(**kw):
         return [np.array(e) for e in data]
     else:
         adj, Q, D, U = wass_adjoint(**kw)
-        return sum(Q**2) * kw['dt'], adj, Q, D, U
-    
+        i1,i2 = cut(len(Q), restrict)
+        return np.trapz(Q[i1:i2]**2) * kw['dt'], \
+            adj[i1:i2], \
+            Q[i1:i2], \
+            D[i1:i2], \
+            U
