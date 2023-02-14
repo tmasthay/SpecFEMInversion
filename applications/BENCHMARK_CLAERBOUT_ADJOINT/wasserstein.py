@@ -1,6 +1,15 @@
 import numpy as np
 from itertools import accumulate
 
+def split_normalize(f):
+    pos = np.array([e if e > 0 else 0.0 for e in f])
+    neg = np.array([-e if e < 0 else 0.0 for e in f])
+    C1 = sum(pos)
+    C2 = sum(neg)
+    pos = pos if C1 == 0.0 else pos / C1
+    neg = neg if C2 == 0.0 else neg / C2
+    return pos, neg
+
 def cut(n,restrict):
     if( type(restrict) == type(None) ):
         return 0,n
@@ -59,7 +68,7 @@ def wass_adjoint(**kw):
     return adjoint,Q,D,U
 
 def wass_adjoint_and_eval(**kw):
-    if( 'multi' in kw.keys() ):
+    if( kw.get('multi', False) ):
         data = [ [], [], [], [], [] ]
         adjoints = []
         transports = []

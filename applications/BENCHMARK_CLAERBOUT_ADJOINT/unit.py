@@ -111,3 +111,21 @@ def test_wass_adjoint_and_eval():
     plt.savefig('unit_test_plots/wasserstein/test_wass_adjoint_and_eval.pdf')
 
     assert err <= tol, "Incorrect Wasserstein adjoint+eval: (%.2e, %.2e)"%(err, tol)
+
+def test_split_normalization():
+    x = np.array([-5,-4,-3,-2,-1,0,1,2,3,4,5])
+    pos, neg = split_normalize(x)
+    ref_pos = (1.0 / 15.0) * np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+    ref_neg = (1.0 / 15.0) * np.array([5.0, 4.0, 3.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    assert( len(ref_pos) == len(ref_neg) )
+    valid = (pos == ref_pos).all() and (neg == ref_neg).all()
+
+    plt.figure()
+    N = len(x)
+    plt.plot(range(N), x, linestyle='-', label='Orig')
+    plt.plot(range(N), pos, linestyle='dashed', label='+')
+    plt.plot(range(N), neg, linestyle='dashdot', label='-')
+    plt.legend()
+    plt.title('Splitting normalization')
+    plt.savefig('unit_test_plots/wasserstein/split_normalize.pdf')
+    assert valid, "Incorrect normalization"
