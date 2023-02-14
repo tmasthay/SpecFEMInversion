@@ -225,7 +225,7 @@ echo "creating adjoint sources..."
 if [ -e OUTPUT_FILES.syn.forward/Ux_file_single_d.su ]; then
   syn=OUTPUT_FILES.syn.forward/Ux_file_single_d.su
   dat=OUTPUT_FILES.dat.forward/Ux_file_single_d.su
-  mode=w2
+  mode=$1
   echo "> ./adj_seismogram.py $syn $dat $mode"
   echo
   # adjoint source f^adj = (s - d)
@@ -250,7 +250,7 @@ fi
 if [ -e OUTPUT_FILES.syn.forward/Uz_file_single_d.su ]; then
   syn=OUTPUT_FILES.syn.forward/Uz_file_single_d.su
   dat=OUTPUT_FILES.dat.forward/Uz_file_single_d.su
-  mode=w2
+  mode=$1
   echo "> ./adj_seismogram.py $syn $dat $mode"
   echo
   # adjoint source f^adj = (s - d)
