@@ -14,6 +14,9 @@ from helper_functions import helper
 
 from wasserstein import *
 from subprocess import check_output as co
+import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
+from helper_tyler import Tyler
 
 #########################################
 
@@ -86,7 +89,7 @@ def adj_seismogram_get_files(NSTEP,DT,NPROC,SIM_TYPE):
 #------------------------------------------------------------------------------------------
 #
 
-def adj_seismogram(filename_syn,filename_dat, mode='l2', **kw):
+def adj_seismogram(filename_syn,filename_dat, mode='w2', **kw):
     """
     creates adjoint seismograms
     """
@@ -172,15 +175,50 @@ def adj_seismogram(filename_syn,filename_dat, mode='l2', **kw):
                 # saves as adjoint source
                 adj = adj_new.copy()
     elif( mode.lower() == 'w2' ):
-        restrict = 0.25
-        nt = int(co('cat ELASTIC/DATA/Par_file | grep "NSTEP"', shell=True) \
-            .decode('utf-8').split('='))
-        adj = np.zeros(syn.shape)
+        restrict = 0.1
+        nt = int(co('cat DATA/Par_file | grep "NSTEP"', shell=True) \
+            .decode('utf-8').split('=')[-1])
+        i1,i2 = cut(nt, restrict)
+        adj = np.zeros((syn.shape[0], i2-i1))
         dists = np.zeros(syn.shape[0])
+        t = np.array([DT*n for n in range(i1,i2)])
         for i in range(syn.shape[0]):
-            s = split_normalize(syn)
-            d = split_normalize(dat)
-            dists[i], adj[i], Q, D, U = wass_adjoint_and_eval(d=d,u=s,dt=DT,ot=0.0,nt=nt,restrict=restrict)
+            s = split_normalize(syn[i])
+            #recall in future that CDF of d doesn't need to be computed every time
+            d = split_normalize(dat[i])
+            dists[i], adj[i], Q, D, U = wass_adjoint_and_eval(d=d,u=s,dt=DT,ot=0.0,nt=nt,restrict=restrict,multi=True)
+
+            plt.rcParams['text.usetex'] = True
+            plt.figure(1)
+            plt.subplots_adjust(wspace=0.4, hspace=0.4)
+            plt.subplot(2,2,1)
+            plt.plot(t, dat[i][i1:i2], linewidth=1.0, label='Observed data')
+            plt.plot(t, syn[i][i1:i2], linestyle='dashed', linewidth=0.5, label='Synthetic')
+            plt.title(r'Raw Trace Data, trace %d'%i)
+            # formatter = ScalarFormatter(useMathText=True)
+            # formatter.set_scientific(True)
+            # plt.gca().yaxis.set_major_formatter(formatter)
+            Tyler.sn_plot()
+            plt.legend(fontsize=8)
+
+            plt.subplot(2,2,2)
+            plt.scatter(t, np.log(dat[i][i1:i2]) / np.log(10.0), marker='.', s=0.2, label='Observed data')
+            plt.scatter(t, np.log(syn[i][i1:i2]) / np.log(10.0), marker='*', s=0.2, label='Synthetic')
+            plt.title(r'Log-scale Trace Data, trace %d'%i)
+            plt.legend(fontsize=8)
+
+            plt.subplot(2,2,3)
+            plt.plot(t,adj[i],linestyle='-',label='W2 adjoint')
+            Tyler.sn_plot()
+            plt.title(r'$W_2$ Adjoint for trace %d'%i)
+
+            plt.subplot(2,2,4)
+            plt.plot(t,syn[i][i1:i2] - dat[i][i1:i2], linestyle='-', linewidth=0.5, label='L2 adjoint')
+            Tyler.sn_plot()
+            plt.title('$L_2$ Adjoint for trace %d'%i)
+            plt.savefig('OUTPUT_FILES/adjoint_%d.pdf'%i)
+            plt.clf()
+
         print('Total W2 misfit: %.2e'%(sum(dists)))
     else:
         raise ValueError('Mode "%s" not supported'%mode)
@@ -270,8 +308,9 @@ if __name__ == '__main__':
 
     filename_syn = sys.argv[1]
     filename_dat = sys.argv[2]
+    mode = sys.argv[3]
 
-    adj_seismogram(filename_syn,filename_dat)
+    adj_seismogram(filename_syn,filename_dat,mode)
 
     print("")
     print("all done")

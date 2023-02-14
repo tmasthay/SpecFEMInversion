@@ -72,7 +72,6 @@ def wass_adjoint_and_eval(**kw):
         data = [ [], [], [], [], [] ]
         adjoints = []
         transports = []
-        data = []
         synthetic = []
         Q = kw.get('Q', None)
         assert( Q == None )
@@ -80,10 +79,11 @@ def wass_adjoint_and_eval(**kw):
         assert( type(kw['dt']) == float )
         for (dd,uu) in zip(kw['u'], kw['d']):
             curr = wass_adjoint_and_eval(d=dd, u=uu, 
-                dt=kw['dt'])
+                dt=kw['dt'], ot=kw['ot'], restrict=kw['restrict'])
             for i in range(len(data)):
                 data[i].append(curr[i])
-        return [np.array(e) for e in data]
+        data = [np.array(sum(e)) for e in data]
+        return data[0], data[1], data[2], data[3], data[4]
     else:
         adj, Q, D, U = wass_adjoint(**kw)
         i1,i2 = cut(len(kw['u']), kw.get('restrict', None))
