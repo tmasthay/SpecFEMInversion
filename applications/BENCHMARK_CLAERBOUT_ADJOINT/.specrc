@@ -71,13 +71,14 @@ spcmds(){
 
 spgift(){
     DIR=$1
+    PREFIX=$2
     if [[ $DIR == "" ]]
     then
         DIR=$SPEC_OUT
     fi
     if [[ ! -f $DIR/movie.gif ]] 
     then
-        JPG_FILES=$(ls -t $DIR/*.jpg)
+        JPG_FILES=$(ls -t $DIR/$PREFIX*.jpg)
         convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
     fi
     open $DIR/movie.gif
@@ -85,13 +86,14 @@ spgift(){
 
 spgif(){
     DIR=$1
+    PREFIX=$2
     if [[ $DIR == "" ]]
     then
         DIR=$(pwd)/OUTPUT_FILES
     fi
     if [[ ! -f $DIR/movie.gif ]]
     then
-        JPG_FILES=$(ls -t $DIR/*.jpg)
+        JPG_FILES=$(ls -t $DIR/$PREFIX*.jpg)
         convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
     fi
     open $DIR/movie.gif
