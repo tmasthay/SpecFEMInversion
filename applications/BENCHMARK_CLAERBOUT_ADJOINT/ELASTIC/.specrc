@@ -1,0 +1,138 @@
+#!/bin/zsh
+
+#path names
+export SPEC=/Users/tyler/spec/specfem2d
+export SPEC_BIN=$SPEC/bin
+export SPEC_DATA=$SPEC/DATA
+export SPEC_OUT=$SPEC/OUTPUT_FILES
+export SPEC_APP=$SPEC/SpecFEMInversion/applications/BENCHMARK_CLAERBOUT_ADJOINT/ELASTIC
+
+#aliases
+alias spsrc='source ~/.specrc'
+alias spjpg='open $SPEC_OUT/*.jpg'
+alias sprc='vi ~/.specrc'
+alias sppar='vi $SPEC_DATA/Par_file'
+alias cda='cd $SPEC_APP'
+
+#functions
+spsetup(){
+    mkdir -p bin
+    cd bin
+    rm -f x*
+    ln -s $SPEC/bin/xspecfem2D
+    ln -s $SPEC/bin/xmeshfem2D
+    ln -s $SPEC/bin/xcheck_quality_external_mesh
+    ln -s $SPEC/bin/xadj_seismogram
+    ln -s $SPEC/bin/xconvolve_source_timefunction
+    cd ..
+}
+
+sprun(){
+    bin/xspecfem2D
+}
+
+spmesh(){
+    bin/xmeshfem2D
+}
+
+spcheck_mesh(){
+    bin/xcheck_quality_external_mesh
+}
+
+spadj(){
+    bin/xadj_seismogram
+}
+
+spconv(){
+    bin/xconvolve_source_timefunction
+}
+
+#See binaries in SPECFEM2D
+spbin(){
+    ls $SPEC_BIN
+}
+
+#See data
+spdata(){
+    ls $SPEC_DATA
+}
+
+#see config info
+spsee(){
+    echo "~/.specrc"
+}
+
+#See SPECFEM envrionment variables
+spenv(){
+    env | grep "SPEC"
+}
+
+spcmds(){
+    cat ~/.specrc | grep ".*(){" | sed 's/(){//'
+}
+
+spgift(){
+    DIR=$1
+    PREFIX=$2
+    if [[ $DIR == "" ]]
+    then
+        DIR=$SPEC_OUT
+    fi
+    if [[ ! -f $DIR/movie.gif ]] 
+    then
+        JPG_FILES=$(ls -t $DIR/$PREFIX*.jpg)
+        convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
+    fi
+    open $DIR/movie.gif
+}
+
+spgif(){
+    DIR=$1
+    PREFIX=$2
+    if [[ $DIR == "" ]]
+    then
+        DIR=$(pwd)/OUTPUT_FILES
+    fi
+    if [[ ! -f $DIR/movie.gif ]]
+    then
+        JPG_FILES=$(ls -t $DIR/$PREFIX*.jpg)
+        convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
+    fi
+}
+
+spgifv(){
+    open $1/*.gif
+}
+
+spsave(){
+    mkdir -p FIGURES
+    A=$(date | awk '{print $2"_"$3"_"$6}')
+    mkdir -p FIGURES/$A
+    NUMBER1=$(ls FIGURES/$A | wc -w | sed 's/[ \t]*//g')
+    mkdir -p FIGURES/$A/$NUMBER1
+    #echo "$(date)" > $A/$NUMBER1/creation_time.txt
+    cp $(find . -name "*.jpg" -not -path "./FIGURES/*") FIGURES/$A/$NUMBER1
+    B=$(find . -name "*.jpg" -not -path "./FIGURES/*" | sed "s/^.*\/\(.*\)\([^0-9]\)[0-9]*.jpg/FIGURES\/$A\/$NUMBER1\/\1\2/g" | sort | uniq)
+#    C=$(echo $B | sed 's/FIGURES\///g')
+    D=("${(f)${B//\\n/$'\n'}}")
+    for d in "${D[@]}"
+    do
+        TMP1=$(echo $d | awk -F '/' '{print $NF}')
+        mkdir -p $d
+        TMP2=$(find FIGURES/$A/$NUMBER1 -name "$TMP1*.jpg")
+        TMP3=("${(f)${TMP2//\\n/$'\n'}}")
+        for t in "${TMP3[@]}"
+        do
+            cp $t $d
+        done
+        spgif $d
+#        spgif $B[(i)$i]
+        mv $d/movie.gif "$d/$TMP1.gif"
+    done
+    rm $(pwd)/FIGURES/$A/$NUMBER1/*jpg
+}
+
+splf(){
+    cd FIGURES/$(ls -t FIGURES | head -n 1)
+    cd $(ls -t | head -n 1)
+}
