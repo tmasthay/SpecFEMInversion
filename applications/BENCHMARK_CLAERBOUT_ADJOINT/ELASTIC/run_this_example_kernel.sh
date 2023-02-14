@@ -225,10 +225,11 @@ echo "creating adjoint sources..."
 if [ -e OUTPUT_FILES.syn.forward/Ux_file_single_d.su ]; then
   syn=OUTPUT_FILES.syn.forward/Ux_file_single_d.su
   dat=OUTPUT_FILES.dat.forward/Ux_file_single_d.su
-  echo "> ./adj_seismogram.py $syn $dat"
+  mode="w2"
+  echo "> ./adj_seismogram.py $syn $dat $mode"
   echo
   # adjoint source f^adj = (s - d)
-  ./adj_seismogram.py $syn $dat
+  ./adj_seismogram.py $syn $dat $mode
   # checks exit code
   if [[ $? -ne 0 ]]; then exit 1; fi
 fi

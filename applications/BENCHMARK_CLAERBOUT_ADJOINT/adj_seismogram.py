@@ -12,6 +12,9 @@ import os
 
 from helper_functions import helper
 
+from wasserstein import *
+from subprocess import check_output as co
+
 #########################################
 
 ## globals
@@ -112,67 +115,76 @@ def adj_seismogram(filename_syn,filename_dat, mode='l2', **kw):
     # adjoint source f^adj = (s - d)
     if( mode.lower() == 'l2' ):
         adj = syn - dat
+            # misfit values
+        print("misfit:")
+        diff_max = np.abs(adj).max()
+        print("  maximum adjoint value (syn - dat) = ",diff_max)
+
+        # total misfit
+        total_misfit = 0.0
+        for irec in range(len(adj)):
+            # single receiver trace
+            adj_trace = adj[irec]
+            # inner product
+            total_misfit += np.sum(adj_trace * adj_trace) * DT
+
+        print("")
+        print("  total misfit: sum(s - d)^2 = {:e}".format(total_misfit))
+        print("")
+
+        # number of receivers/traces (SU files have only single components)
+        num_receivers = len(adj)
+
+        print("adjoint source:")
+        print("  number of traces = ",num_receivers)
+
+        # checks
+        if num_receivers == 0:
+            print("Did find no receivers or traces, please check...")
+            sys.exit(1)
+
+        # for acoustic FWI, L2 adjoint source is the second derivative of pressure difference
+        # (e.g., see Peter et al. 2011, GJI, eq. (A8))
+        if name == "Up_file_single_p.su":
+            # pressure output
+            # note: pressure in fluid is defined as p = - \partial_t^2 phi
+            #       thus, if potential phi is chosen as output, there is a minus sign and time derivative difference.
+            #
+            #       assuming a pressure output for syn and dat, the adjoint source expression is given by (A8) in Peter et al. (2011)
+            #       note the negative sign in the definition.
+            #       the adjoint source for pressure is: f^adj = - \partial_t^2 p_syn - \partial_t^2 p_obs
+            #                                                 = - \partial_t^2 ( p_syn - p_obs )
+            #
+            if use_derivative_of_pressure:
+                print("  creating adjoint sources for pressure (taking second-derivative of pressure differences)...")
+                # takes second-derivative
+                adj_new = adj.copy()
+                fac = 1.0 / DT**2
+                for irec in range(num_receivers):
+                    # single receiver trace
+                    adj_trace = adj[irec]
+                    for i in range(1,len(adj_trace)-1):
+                        # do a simple central finite difference
+                        val = (adj_trace[i+1] - 2.0 * adj_trace[i] + adj_trace[i-1]) * fac
+                        # adding negative sign
+                        adj_new[irec][i] = - val
+
+                # saves as adjoint source
+                adj = adj_new.copy()
+    elif( mode.lower() == 'w2' ):
+        restrict = 0.25
+        nt = int(co('cat ELASTIC/DATA/Par_file | grep "NSTEP"', shell=True) \
+            .decode('utf-8').split('='))
+        adj = np.zeros(syn.shape)
+        dists = np.zeros(syn.shape[0])
+        for i in range(syn.shape[0]):
+            s = split_normalize(syn)
+            d = split_normalize(dat)
+            dists[i], adj[i], Q, D, U = wass_adjoint_and_eval(d=d,u=s,dt=DT,ot=0.0,nt=nt,restrict=restrict)
+        print('Total W2 misfit: %.2e'%(sum(dists)))
     else:
         raise ValueError('Mode "%s" not supported'%mode)
         
-
-    # misfit values
-    print("misfit:")
-    diff_max = np.abs(adj).max()
-    print("  maximum adjoint value (syn - dat) = ",diff_max)
-
-    # total misfit
-    total_misfit = 0.0
-    for irec in range(len(adj)):
-        # single receiver trace
-        adj_trace = adj[irec]
-        # inner product
-        total_misfit += np.sum(adj_trace * adj_trace) * DT
-
-    print("")
-    print("  total misfit: sum(s - d)^2 = {:e}".format(total_misfit))
-    print("")
-
-    # number of receivers/traces (SU files have only single components)
-    num_receivers = len(adj)
-
-    print("adjoint source:")
-    print("  number of traces = ",num_receivers)
-
-    # checks
-    if num_receivers == 0:
-        print("Did find no receivers or traces, please check...")
-        sys.exit(1)
-
-    # for acoustic FWI, L2 adjoint source is the second derivative of pressure difference
-    # (e.g., see Peter et al. 2011, GJI, eq. (A8))
-    if name == "Up_file_single_p.su":
-        # pressure output
-        # note: pressure in fluid is defined as p = - \partial_t^2 phi
-        #       thus, if potential phi is chosen as output, there is a minus sign and time derivative difference.
-        #
-        #       assuming a pressure output for syn and dat, the adjoint source expression is given by (A8) in Peter et al. (2011)
-        #       note the negative sign in the definition.
-        #       the adjoint source for pressure is: f^adj = - \partial_t^2 p_syn - \partial_t^2 p_obs
-        #                                                 = - \partial_t^2 ( p_syn - p_obs )
-        #
-        if use_derivative_of_pressure:
-            print("  creating adjoint sources for pressure (taking second-derivative of pressure differences)...")
-            # takes second-derivative
-            adj_new = adj.copy()
-            fac = 1.0 / DT**2
-            for irec in range(num_receivers):
-                # single receiver trace
-                adj_trace = adj[irec]
-                for i in range(1,len(adj_trace)-1):
-                    # do a simple central finite difference
-                    val = (adj_trace[i+1] - 2.0 * adj_trace[i] + adj_trace[i-1]) * fac
-                    # adding negative sign
-                    adj_new[irec][i] = - val
-
-            # saves as adjoint source
-            adj = adj_new.copy()
-
     # statistics
     amp_max = np.abs(adj).max()
     print("  maximum amplitude |f^adj| = ",amp_max)
