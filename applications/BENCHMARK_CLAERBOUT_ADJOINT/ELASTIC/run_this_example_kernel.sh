@@ -24,7 +24,7 @@ perturb_param="vp"
 perturb_percent=-0.02
 
 # number of stations along x/z lines
-nlinesx=2
+nlinesx=1
 nlinesz=1
 
 ##############################################
