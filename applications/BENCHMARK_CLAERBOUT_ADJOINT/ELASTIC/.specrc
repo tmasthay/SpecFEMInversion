@@ -89,50 +89,121 @@ spgift(){
 spgif(){
     DIR=$1
     PREFIX=$2
+    SUFFIX=$3
+    OUTPUT=$4
     if [[ $DIR == "" ]]
     then
         DIR=$(pwd)/OUTPUT_FILES
     fi
-    if [[ ! -f $DIR/movie.gif ]]
+    if [[ $PREFIX == "none" ]]
     then
-        JPG_FILES=$(ls -t $DIR/$PREFIX*.jpg)
-        convert -delay 20 -loop 0 $DIR/*.jpg $DIR/movie.gif
+        PREFIX=""
     fi
+    if [[ $SUFFIX == "" ]]
+    then
+        SUFFIX="jpg"
+    fi
+    if [[ $OUTPUT == "" ]]
+    then
+        OUTPUT=movie
+    fi
+    OUTPUT="$DIR/$OUTPUT"
+    num_files=$(ls -t $DIR/$PREFIX*.$SUFFIX | wc -w | sed 's/[ \t]*//g')
+    convert -delay 20 -loop 0 $DIR/$PREFIX*.$SUFFIX $OUTPUT.gif
+    echo "spgif dir=$DIR prefix=$PREFIX type=$SUFFIX output=$OUTPUT -- Converted $num_files of type $SUFFIX into $OUTPUT.gif"
 }
 
-spgifv(){
+spgv(){
     open $1/*.gif
 }
 
-spsave(){
+spdate(){
+    SUFFIX=$1
+    if [[ $SUFFIX == "" ]]
+    then
+        SUFFIX="jpg"
+    fi
     mkdir -p FIGURES
     A=$(date | awk '{print $2"_"$3"_"$6}')
     mkdir -p FIGURES/$A
     NUMBER1=$(ls FIGURES/$A | wc -w | sed 's/[ \t]*//g')
     mkdir -p FIGURES/$A/$NUMBER1
     #echo "$(date)" > $A/$NUMBER1/creation_time.txt
-    cp $(find . -name "*.jpg" -not -path "./FIGURES/*") FIGURES/$A/$NUMBER1
-    B=$(find . -name "*.jpg" -not -path "./FIGURES/*" | sed "s/^.*\/\(.*\)\([^0-9]\)[0-9]*.jpg/FIGURES\/$A\/$NUMBER1\/\1\2/g" | sort | uniq)
+    cp $(find . -name "*.$SUFFIX" -not -path "./FIGURES/*") FIGURES/$A/$NUMBER1
+    B=$(find . -name "*.$SUFFIX" -not -path "./FIGURES/*" | sed "s/^.*\/\(.*\)\([^0-9]\)[0-9]*.$SUFFIX/FIGURES\/$A\/$NUMBER1\/\1\2/g" | sort | uniq)
 #    C=$(echo $B | sed 's/FIGURES\///g')
     D=("${(f)${B//\\n/$'\n'}}")
     for d in "${D[@]}"
     do
         TMP1=$(echo $d | awk -F '/' '{print $NF}')
         mkdir -p $d
-        TMP2=$(find FIGURES/$A/$NUMBER1 -name "$TMP1*.jpg")
+        TMP2=$(find FIGURES/$A/$NUMBER1 -name "$TMP1*.$SUFFIX")
         TMP3=("${(f)${TMP2//\\n/$'\n'}}")
         for t in "${TMP3[@]}"
         do
             cp $t $d
         done
-        spgif $d
+        spgif "$d" "none" $SUFFIX $TMP1
 #        spgif $B[(i)$i]
-        mv $d/movie.gif "$d/$TMP1.gif"
+#        mv $d/movie.gif "$d/$TMP1.gif"
     done
-    rm $(pwd)/FIGURES/$A/$NUMBER1/*jpg
+    rm $(pwd)/FIGURES/$A/$NUMBER1/*$SUFFIX
 }
+
+spsave(){
+    SUFFIX=$1
+    BASE_DIR=$2
+    if [[ $SUFFIX == "" ]]
+    then
+        SUFFIX="jpg"
+    fi
+    if [[ $BASE_DIR == "" ]]
+    then
+        BASE_DIR=$SPEC_APP/FINAL_RESULTS
+    fi
+    mkdir -p FIGURES
+    A=$(( $(ls -t FIGURES | wc -w) + 1 ))
+    mkdir -p FIGURES/$A
+    cp -r $BASE_DIR FIGURES/$A
+    PREV=$(pwd)
+    cd FIGURES/$A
+    B=$(ls)
+    mkdir MOVIES
+    cd $B
+    #echo "$(date)" > $A/$NUMBER1/creation_time.txt
+    B=$(find . -name "*.$SUFFIX" | sed "s/^.*\/\(.*\)\([^0-9]\)[0-9]*.\/\1\2/g" | sort | uniq)
+#    C=$(echo $B | sed 's/FIGURES\///g')
+    D=("${(f)${B//\\n/$'\n'}}")
+    for d in "${D[@]}"
+    do
+        TMP1=$(echo $d | awk -F '/' '{print $NF}')
+        mkdir -p MOVIES/$d
+        TMP2=$(find . -name "$TMP1*.$SUFFIX")
+        TMP3=("${(f)${TMP2//\\n/$'\n'}}")
+        for t in "${TMP3[@]}"
+        do
+            mv $t MOVIES/$d
+        done
+        spgif "MOVIES/$d" "none" $SUFFIX $TMP1
+#        spgif $B[(i)$i]
+#        mv $d/movie.gif "$d/$TMP1.gif"
+    done
+    cd $PREV
+}
+
 
 splf(){
     cd FIGURES/$(ls -t FIGURES | head -n 1)
     cd $(ls -t | head -n 1)
+}
+
+spps(){
+    A=$(find . -name "*.ps")
+    B=("${(f)${A//\\n/$'\n'}}")
+    for b in "${B[@]}"
+    do
+       C=$(echo "$b" | sed "s/.ps/.pdf/")
+       echo "ps2pdf $b $C"
+       ps2pdf $b $C
+    done
 }

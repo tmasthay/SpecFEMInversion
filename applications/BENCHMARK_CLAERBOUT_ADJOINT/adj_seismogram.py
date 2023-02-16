@@ -89,7 +89,7 @@ def adj_seismogram_get_files(NSTEP,DT,NPROC,SIM_TYPE):
 #------------------------------------------------------------------------------------------
 #
 
-def adj_seismogram(filename_syn,filename_dat, mode='w2', **kw):
+def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', **kw):
     """
     creates adjoint seismograms
     """
@@ -115,6 +115,8 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', **kw):
     DT = hf.sampling_DT * 1.e-6
     print("  trace time steps: DT = ",DT,"(s)")
 
+    output_file = open(output, 'a')
+
     # adjoint source f^adj = (s - d)
     if( mode.lower() == 'l2' ):
         adj = syn - dat
@@ -132,7 +134,8 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', **kw):
             total_misfit += np.sum(adj_trace * adj_trace) * DT
 
         print("")
-        print("{:e}".format(total_misfit), file=sys.stderr)
+        output_file.write("{:e}\n".format(total_misfit))
+        print("{:e}".format(total_misfit))
         print("")
 
         # number of receivers/traces (SU files have only single components)
@@ -218,10 +221,11 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', **kw):
             plt.title('$L_2$ Adjoint for trace %d'%i)
             plt.savefig('OUTPUT_FILES/adjoint_%d.pdf'%i)
             plt.clf()
-
+        output_file.write('{:e}\n'.format(sum(dists)))
         print('Total W2 misfit: %.2e'%(sum(dists)))
     else:
         raise ValueError('Mode "%s" not supported'%mode)
+    output_file.close()
         
     # statistics
     amp_max = np.abs(adj).max()
@@ -309,8 +313,9 @@ if __name__ == '__main__':
     filename_syn = sys.argv[1]
     filename_dat = sys.argv[2]
     mode = sys.argv[3]
+    output_file = sys.argv[4]
 
-    adj_seismogram(filename_syn,filename_dat,mode)
+    adj_seismogram(filename_syn,filename_dat,mode,output_file)
 
     print("")
     print("all done")
