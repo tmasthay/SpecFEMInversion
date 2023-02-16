@@ -132,7 +132,7 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', **kw):
             total_misfit += np.sum(adj_trace * adj_trace) * DT
 
         print("")
-        print("  total misfit: sum(s - d)^2 = {:e}".format(total_misfit))
+        print("{:e}".format(total_misfit), file=sys.stderr)
         print("")
 
         # number of receivers/traces (SU files have only single components)
