@@ -171,7 +171,7 @@ spsave(){
     mkdir MOVIES
     cd $B
     #echo "$(date)" > $A/$NUMBER1/creation_time.txt
-    B=$(find . -name "*.$SUFFIX" | sed "s/^.*\/\(.*\)\([^0-9]\)[0-9]*.\/\1\2/g" | sort | uniq)
+    B=$(find . -name "*.$SUFFIX" | sed "s/^.*\/\(.*\)\([^0-9]\)[0-9]*.$SUFFIX/\1\2/g" | sort | uniq)
 #    C=$(echo $B | sed 's/FIGURES\///g')
     D=("${(f)${B//\\n/$'\n'}}")
     for d in "${D[@]}"
