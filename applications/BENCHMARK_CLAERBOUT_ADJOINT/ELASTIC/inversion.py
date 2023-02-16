@@ -10,9 +10,10 @@ def postprocess(files, output_name='MOVIES'):
     store = 'FIGURES'
     print(spec_app)
     s = '%s/%s'%(spec_app, store)
-    latest = co('echo "%s/$(ls -t %s | head -n 1)"'%(s,s), shell=True) \
-        .decode('utf-8') \
-        .replace('\n', '')
+    os.system('mkdir -p %s'%s)
+    next = int(co('ls -t %s | head -n 1'%s, shell=True).decode('utf-8')) + 1
+    latest = '%s/%d'%(s,next)
+    os.system('cp -rp %s/FINAL_RESULTS %s'%(spec_app, latest))
     os.system('mkdir -p %s/%s'%(latest, output_name))
     for base, ext in files:
         cmd = 'convert -delay 20 -loop 0 $(find %s -name "*%s.%s") %s'%(
