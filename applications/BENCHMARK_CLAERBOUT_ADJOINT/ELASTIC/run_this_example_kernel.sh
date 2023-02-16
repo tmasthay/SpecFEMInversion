@@ -21,7 +21,7 @@ SIM_TYPE=2
 perturb_param="vp"
 
 # perturbation (should be small enough for approximating S(m - m0) ~ S(m) - S(m0)
-perturb_percent=-0.02
+perturb_percent=-0.1
 
 # number of stations along x/z lines
 nlinesx=1
