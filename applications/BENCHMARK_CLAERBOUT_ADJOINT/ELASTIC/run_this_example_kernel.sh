@@ -229,7 +229,7 @@ if [ -e OUTPUT_FILES.syn.forward/Ux_file_single_d.su ]; then
   echo "> ./adj_seismogram.py $syn $dat $mode"
   echo
   # adjoint source f^adj = (s - d)
-  ./adj_seismogram.py $syn $dat $mode
+  ./adj_seismogram.py $syn $dat $mode tmp.txt
   # checks exit code
   if [[ $? -ne 0 ]]; then exit 1; fi
 fi
@@ -238,10 +238,11 @@ fi
 if [ -e OUTPUT_FILES.syn.forward/Uy_file_single_d.su ]; then
   syn=OUTPUT_FILES.syn.forward/Uy_file_single_d.su
   dat=OUTPUT_FILES.dat.forward/Uy_file_single_d.su
+  mode=$1
   echo "> ./adj_seismogram.py $syn $dat"
   echo
   # adjoint source f^adj = (s - d)
-  ./adj_seismogram.py $syn $dat
+  ./adj_seismogram.py $syn $dat $mode tmp.txt
   # checks exit code
   if [[ $? -ne 0 ]]; then exit 1; fi
 fi
@@ -254,7 +255,7 @@ if [ -e OUTPUT_FILES.syn.forward/Uz_file_single_d.su ]; then
   echo "> ./adj_seismogram.py $syn $dat $mode"
   echo
   # adjoint source f^adj = (s - d)
-  ./adj_seismogram.py $syn $dat $mode
+  ./adj_seismogram.py $syn $dat $mode tmp.txt
   # checks exit code
   if [[ $? -ne 0 ]]; then exit 1; fi
 fi
@@ -313,7 +314,7 @@ for (( iproc = 0; iproc < $NPROC; iproc++ )); do
   if [[ $? -ne 0 ]]; then exit 1; fi
 done
 
-########################### final forward ################################
+########################## final forward ################################
 
 ## forward simulation
 echo
