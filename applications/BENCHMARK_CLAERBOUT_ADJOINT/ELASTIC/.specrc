@@ -200,14 +200,12 @@ spsave(){
     fi
     mkdir -p FIGURES
     A=$(( $(ls -t FIGURES | wc -w) + 1 ))
-    mkdir -p FIGURES/$A
-    cp -rp $BASE_DIR TMP_DUMMY
-    mv TMP_DUMMY FIGURES/$A 
+    cp -rp $BASE_DIR FIGURES/$A
 }
 
 
 splf(){
-    cd FIGURES/$(ls -t FIGURES | head -n 1)
+    cd $SPEC_APP/FIGURES/
     cd $(ls -t | head -n 1)
 }
 

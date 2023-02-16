@@ -316,6 +316,7 @@ if __name__ == '__main__':
     output_file = sys.argv[4]
 
     adj_seismogram(filename_syn,filename_dat,mode,output_file)
+    #adj_seismogram(filename_syn,filename_dat,mode)
 
     print("")
     print("all done")

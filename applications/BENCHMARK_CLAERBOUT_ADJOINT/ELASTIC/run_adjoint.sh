@@ -155,6 +155,12 @@ for (( iproc = 0; iproc < $NPROC; iproc++ )); do
   if [[ $? -ne 0 ]]; then exit 1; fi
 done
 
+########################### postprocessing ################################
+if [[ $(($iter_no > 1)) ]]
+then
+  ./kernel_evaluation_postprocessing.py $NSTEP $DT $NPROC $SIM_TYPE
+fi
+
 ########################### final forward ################################
 
 # ## forward simulation
