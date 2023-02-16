@@ -150,7 +150,7 @@ spdate(){
     rm $(pwd)/FIGURES/$A/$NUMBER1/*$SUFFIX
 }
 
-spsave(){
+spsavegif(){
     SUFFIX=$1
     BASE_DIR=$2
     if [[ $SUFFIX == "" ]]
@@ -189,6 +189,19 @@ spsave(){
 #        mv $d/movie.gif "$d/$TMP1.gif"
     done
     cd $PREV
+}
+
+spsave(){
+    BASE_DIR=$1
+    if [[ $BASE_DIR == "" ]]
+    then
+        BASE_DIR=$SPEC_APP/FINAL_RESULTS
+    fi
+    mkdir -p FIGURES
+    A=$(( $(ls -t FIGURES | wc -w) + 1 ))
+    mkdir -p FIGURES/$A
+    cp -rp $BASE_DIR TMP_DUMMY
+    mv TMP_DUMMY FIGURES/$A 
 }
 
 
