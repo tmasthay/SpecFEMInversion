@@ -1,0 +1,3 @@
+cd ..
+source .specrc
+spsave
