@@ -8,11 +8,12 @@ export SPEC_OUT=$SPEC/OUTPUT_FILES
 export SPEC_APP=$SPEC/SpecFEMInversion/applications/BENCHMARK_CLAERBOUT_ADJOINT/ELASTIC
 
 #aliases
-alias spsrc='source ~/.specrc'
+alias spsrc='source $SPEC_APP/.specrc'
 alias spjpg='open $SPEC_OUT/*.jpg'
-alias sprc='vi ~/.specrc'
+alias sprc='vi $SPEC_APP/.specrc'
 alias sppar='vi $SPEC_DATA/Par_file'
 alias cda='cd $SPEC_APP'
+alias spbac='cp $SPEC_APP/.specrc ~/.specrc'
 
 #functions
 spsetup(){
