@@ -108,7 +108,7 @@ NO_BACKWARD_RECONSTRUCTION      = .false.
 #-----------------------------------------------------------
 
 # source parameters
-NSOURCES                        = 1              # number of sources (source information is then read from the DATA/SOURCE file)
+NSOURCES                        = 5              # number of sources (source information is then read from the DATA/SOURCE file)
 force_normal_to_surface         = .false.        # angleforce normal to surface (external mesh and curve file needed)
 
 # use an existing initial wave field as source or start from zero (medium initially at rest)
@@ -124,7 +124,7 @@ ACOUSTIC_FORCING                = .false.        # acoustic forcing of an acoust
 # noise simulations - type of noise source time function:
 # 0=external (S_squared), 1=Ricker(second derivative), 2=Ricker(first derivative), 3=Gaussian, 4=Figure 2a of Tromp et al. 2010
 # (default value 4 is chosen to reproduce the time function from Fig 2a of "Tromp et al., 2010, Noise Cross-Correlation Sensitivity Kernels")
-noise_source_time_function_type = 4
+noise_source_time_function_type = 1
 
 # moving sources
 # Set write_moving_sources_database to .true. if the generation of moving source databases takes
