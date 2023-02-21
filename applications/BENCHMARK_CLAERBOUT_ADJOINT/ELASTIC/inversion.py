@@ -30,7 +30,7 @@ if( __name__ == "__main__" ):
     os.system('echo "%d seconds for setup" > DATA/setup.log'%(time.time() - very_start))
 
     misfits = [np.inf]
-    max_iter = 5
+    max_iter = 3
     tol = 0.0
     iter = 1
     mode = 'l2' if len(sys.argv) < 2 else sys.argv[1]
