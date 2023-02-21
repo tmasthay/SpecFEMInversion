@@ -55,3 +55,38 @@ factor                          = 1.             # amplification factor
 vx                              = 0.0            # Horizontal source velocity (m/s)
 vz                              = 0.0            # Vertical source velocity (m/s)
 
+## Source 2
+source_surf                     = .false.        # source inside the medium, or source automatically moved exactly at the surface by the solver
+xs                              = 100.          # source location x in meters
+zs                              = 500.          # source location z in meters (zs is ignored if source_surf is set to true, it is replaced with the topography height)
+source_type                     = 2
+time_function_type              = 3
+name_of_source_file             = YYYYYYYYYYYYYYYYYY   # Only for option 8 : file containing the source wavelet
+burst_band_width                = 0.             # Only for option 9 : band width of the burst
+f0                              = 50.0           # dominant source frequency (Hz) if not Dirac or Heaviside
+tshift                          = 0.0            # time shift when multi sources (if one source, must be zero)
+anglesource                     = 0.0
+Mxx                             = 1.d16          # Mxx component (for a moment tensor source only)
+Mzz                             = 1.d16          # Mzz component (for a moment tensor source only)
+Mxz                             = 0.0            # Mxz component (for a moment tensor source only)
+factor                          = 1.             # amplification factor
+vx                              = 0.0            # Horizontal source velocity (m/s)
+vz                              = 0.0            # Vertical source velocity (m/s)
+
+## Source 3
+source_surf                     = .false.        # source inside the medium, or source automatically moved exactly at the surface by the solver
+xs                              = 200.          # source location x in meters
+zs                              = 700.          # source location z in meters (zs is ignored if source_surf is set to true, it is replaced with the topography height)
+source_type                     = 2
+time_function_type              = 3
+name_of_source_file             = YYYYYYYYYYYYYYYYYY   # Only for option 8 : file containing the source wavelet
+burst_band_width                = 0.             # Only for option 9 : band width of the burst
+f0                              = 50.0           # dominant source frequency (Hz) if not Dirac or Heaviside
+tshift                          = 0.0            # time shift when multi sources (if one source, must be zero)
+anglesource                     = 0.0
+Mxx                             = 1.d16          # Mxx component (for a moment tensor source only)
+Mzz                             = 1.d16          # Mzz component (for a moment tensor source only)
+Mxz                             = 0.0            # Mxz component (for a moment tensor source only)
+factor                          = 1.             # amplification factor
+vx                              = 0.0            # Horizontal source velocity (m/s)
+vz                              = 0.0            # Vertical source velocity (m/s)

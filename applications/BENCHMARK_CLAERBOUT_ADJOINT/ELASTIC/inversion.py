@@ -11,7 +11,10 @@ def postprocess(files, output_name='MOVIES'):
     print(spec_app)
     s = '%s/%s'%(spec_app, store)
     os.system('mkdir -p %s'%s)
-    next = int(co('ls -t %s | head -n 1'%s, shell=True).decode('utf-8')) + 1
+    try:
+        next = 1 + int(co('ls -t %s | head -n 1'%s, shell=True).decode('utf-8'))
+    except:
+        next = 1
     latest = '%s/%d'%(s,next)
     os.system('cp -rp %s/FINAL_RESULTS %s'%(spec_app, latest))
     os.system('mkdir -p %s/%s'%(latest, output_name))
