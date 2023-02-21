@@ -49,29 +49,55 @@ class ht:
         except Exception as e:
             raise
 
+    def par_pull(filename='DATA/Par_file_ref'):
+        par_map = {'NSTEP': int,
+            'DT': float,
+            'NSOURCES': int
+        }
+        return ht.get_params(filename, par_map)
+
+    def src_pull(filename='DATA/SOURCES'):
+        src_map = {'f0': float}
+        return ht.get_params(filename, src_map)
+
     def create_ricker_time_derivative(base_dir='DATA', warn=False):
         if( base_dir[-1] == '/' ):
-            base_dir = base_dir[:-1]           
-        par_fields = ht.get_params(base_dir + '/Par_file_ref')
-        source_fields = ht.get_params(base_dir + '/SOURCE')
+            base_dir = base_dir[:-1]
 
-        nt = par_fields['NSTEP']
-        dt = par_fields['DT']
+        par_fields = ht.par_pull(base_dir + '/Par_file_ref')
+        source_fields = ht.src_pull(base_dir + '/SOURCE')
+
+        nt = par_fields['NSTEP'][0]
+        dt = par_fields['DT'][0]
         t = np.linspace(0.0, dt*(nt-1), nt)
 
-        num_sources = source_fields['NSOURCES']
         freq = source_fields['f0']
         for (i,f) in enumerate(freq):
-            tmp1 = -6.0 * np.pi**2 * freq**2 * t**2
-            tmp2 = 4.0 * np.pi**4 * freq**3 * t**4
-            tmp3 = np.exp(-np.pi**2 * freq**2 * t**2)
-            curr = tmp1 * tmp2 * tmp3
+            tmp1 = -6.0 * np.pi**2 * f * t**2
+            tmp2 = 4.0 * np.pi**4 * f**3 * t**4
+            tmp3 = np.exp(-np.pi**2 * f**2 * t**2)
+            curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
 if( __name__ == "__main__" ):
     ht.create_ricker_time_derivative('ELASTIC/DATA')
+    par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
+    nt = par_fields['NSTEP'][0]
+    dt = par_fields['DT'][0]
+    t = np.linspace(0.0, dt * (nt-1), nt)
 
-    print(glob('ELASTIC/DATA/ricker_time_deriv_[0-9]*.bin*'))
+    source_params = ht.src_pull('ELASTIC/DATA/SOURCE')
+    freq = source_params['f0']
+
+    v = [np.load(e) for e in glob('ELASTIC/DATA/ricker_time_deriv_[0-9]*.bin*')]
+
+    for (i,e) in enumerate(v):
+        plt.plot(t, e, label='%.1f'%freq[i])
+        plt.savefig('%d.pdf'%i)
+
+    plt.legend()
+    plt.title('Frequency comparison')
+    plt.savefig('freq.pdf')
 
 
 
