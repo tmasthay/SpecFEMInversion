@@ -106,6 +106,8 @@ rm -f kernel_evaluation_postprocessing.py
 ln -s ../kernel_evaluation_postprocessing.py
 rm -f helper_functions.py
 ln -s ../helper_functions.py
+rm -f helper_tyler.py
+ln -s ../helper_tyler.py
 
 rm -f change_simulation_type.pl
 ln -s $SPEC/utils/change_simulation_type.pl
