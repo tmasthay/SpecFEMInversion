@@ -54,12 +54,27 @@ class ht:
             'DT': float,
             'NSOURCES': int,
             'NPROC': int,
-            'SIMULATION_TYPE': int
+            'SIMULATION_TYPE': int,
+            'nrec': int,
+            'xdeb': float,
+            'xfin': float,
+            'zdeb': float,
+            'zfin': float
         }
         return ht.get_params(filename, par_map)
 
-    def src_pull(filename='DATA/SOURCES'):
-        src_map = {'f0': float}
+    def src_pull(filename='DATA/SOURCE'):
+        tmp1 = lambda x: float(x.replace('d','e'))
+        src_map = {'f0': float,
+            'source_type': int,
+            'time_function_type': int,
+            'Mxx': tmp1,
+            'Mzz': tmp1,
+            'Mxz': tmp1,
+            'factor': tmp1,
+            'xs': float,
+            'zs': float
+        }
         return ht.get_params(filename, src_map)
 
     def create_ricker_time_derivative(base_dir='DATA', warn=False):
@@ -82,42 +97,53 @@ class ht:
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
     def add_artificial_receivers(src, filename='DATA/Par_file', dz=1.0, dx=1.0):
-        sp = lambda a,b: '%s%s= %s\n'%(a,b)
-        s = sp('nrec', str(9))
-        s += sp('xdeb', '%.1f'%(src[0]-dx))
-        s += sp('zdeb', '%.1f'%(src[1]-dz))
-        s += sp('xfin', '%.1f'%(src[0]+dx))
-        s += sp('zfin', '%.1f'%(src[1]+dz))
-        s += 'record_at_surface_same_vertical = .false.'
-        start_tag = '# *** ARTIFICIAL RECEIVERS START ***'
+        sp = lambda a,b: '%s%s= %s\n'%(a,28 * ' ',b)
+        N = 3
+        s = ''
+        for i in range(-1,N-1):
+            s += '# ARTIFICIAL RECEIVER GROUP %d\n'%(i+2)
+            s += sp('nrec', str(N))
+            s += sp('xdeb', '%.1f'%(src[0]-dx))
+            s += sp('zdeb', '%.1f'%(src[1]+i*dz))
+            s += sp('xfin', '%.1f'%(src[0]+dx))
+            s += sp('zfin', '%.1f'%(src[1]+i*dz))
+            s += 'record_at_surface_same_vertical = .false.\n\n'
+        start_tag = '# ARTIFICIAL RECEIVERS START'
         f = open(filename, 'r')
         text = f.read()
         f.close()
         text = text.replace(start_tag, start_tag + '\n' + s)
+        print(re.findall(r'%s'%start_tag, text))
         f = open(filename, 'w')
         f.write(text)
 
 
 
 if( __name__ == "__main__" ):
-    ht.create_ricker_time_derivative('ELASTIC/DATA')
-    par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
-    nt = par_fields['NSTEP'][0]
-    dt = par_fields['DT'][0]
-    t = np.linspace(0.0, dt * (nt-1), nt)
+    test_case = int(sys.argv[1])
+    if( test_case == 1 ):
+        ht.create_ricker_time_derivative('ELASTIC/DATA')
+        par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
+        nt = par_fields['NSTEP'][0]
+        dt = par_fields['DT'][0]
+        t = np.linspace(0.0, dt * (nt-1), nt)
 
-    source_params = ht.src_pull('ELASTIC/DATA/SOURCE')
-    freq = source_params['f0']
+        source_params = ht.src_pull('ELASTIC/DATA/SOURCE')
+        freq = source_params['f0']
 
-    v = [np.load(e) for e in glob('ELASTIC/DATA/ricker_time_deriv_[0-9]*.bin*')]
+        v = [np.load(e) for e in glob('ELASTIC/DATA/ricker_time_deriv_[0-9]*.bin*')]
 
-    for (i,e) in enumerate(v):
-        plt.plot(t, e, label='%.1f'%freq[i])
-        plt.savefig('%d.pdf'%i)
+        for (i,e) in enumerate(v):
+            plt.plot(t, e, label='%.1f'%freq[i])
+            plt.savefig('%d.pdf'%i)
 
-    plt.legend()
-    plt.title('Frequency comparison')
-    plt.savefig('freq.pdf')
+        plt.legend()
+        plt.title('Frequency comparison')
+        plt.savefig('freq.pdf')
+    elif( test_case == 2 ):
+        v = ht.src_pull()
+        src = [v['xs'][0], v['zs'][0]]
+        ht.add_artificial_receivers(src)
 
 
 

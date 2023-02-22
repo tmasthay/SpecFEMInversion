@@ -193,8 +193,8 @@ xfin                            = 500.          # last receiver x in meters (ign
 zfin                            = 10.             # last receiver z in meters (ignored if only one receiver)
 record_at_surface_same_vertical = .true.        # receivers inside the medium or at the surface (z values are ignored if this is set to true, they are replaced with the topography height)
 
-# *** ARTIFICIAL RECEIVERS HERE ***
-
+# ARTIFICIAL RECEIVERS START 
+# ARTIFICIAL RECEIVERS END
 
 #-----------------------------------------------------------
 #
