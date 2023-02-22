@@ -10,6 +10,7 @@ cd $currentdir
 
 # Make sure to restore previous state
 cp DATA/Par_file_ref DATA/Par_file
+python helper_tyler.py 2
 
 ##############################################
 ## Elastic benchmark

@@ -111,7 +111,12 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
     syn = hf.read_SU_file(filename_syn)
     dat = hf.read_SU_file(filename_dat)
 
-        # sampling rate given in microseconds
+    if( 'artificial' in kw.keys() ):
+        omit = kw['artificial']
+        assert( omit >= 1 )
+        syn = syn[:-omit]
+        
+    # sampling rate given in microseconds
     DT = hf.sampling_DT * 1.e-6
     print("  trace time steps: DT = ",DT,"(s)")
 
@@ -317,7 +322,8 @@ if __name__ == '__main__':
     mode = sys.argv[3]
     output_file = sys.argv[4]
 
-    adj_seismogram(filename_syn,filename_dat,mode,output_file)
+    N = 9
+    adj_seismogram(filename_syn,filename_dat,mode,output_file, artificial=N)
     #adj_seismogram(filename_syn,filename_dat,mode)
 
     print("")

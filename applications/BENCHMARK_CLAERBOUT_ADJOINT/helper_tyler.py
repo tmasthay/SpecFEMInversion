@@ -30,6 +30,10 @@ class ht:
     def sn_plot(local_ax=plt, num_decimals=1):
         local_ax.gca().yaxis.set_major_formatter(ht.MathTextSciFormatter('%' + '1.%de'%num_decimals))
 
+    def sco(s, split_output=False):
+        s = co(s,shell=True).decode('utf-8')
+        return s.split('\n') if split_output else s
+
     def get_params(filename='DATA/Par_file_ref', type_map=dict()):
         try:
             d = dict()
