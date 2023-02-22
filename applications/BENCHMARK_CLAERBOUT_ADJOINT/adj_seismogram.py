@@ -111,11 +111,8 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
     syn = hf.read_SU_file(filename_syn)
     dat = hf.read_SU_file(filename_dat)
 
-    if( 'artificial' in kw.keys() ):
-        omit = kw['artificial']
-        assert( omit >= 1 )
-        syn = syn[:-omit]
-        
+    omit = kw.get('artificial', 0)
+    
     # sampling rate given in microseconds
     DT = hf.sampling_DT * 1.e-6
     print("  trace time steps: DT = ",DT,"(s)")
@@ -125,7 +122,9 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
     # adjoint source f^adj = (s - d)
     if( mode.lower() == 'l2' ):
         adj = syn - dat
-            # misfit values
+        if( omit > 0 ):
+            adj[(len(adj) - omit):] = 0.0
+        # misfit values
         print("misfit:")
         diff_max = np.abs(adj).max()
         print("  maximum adjoint value (syn - dat) = ",diff_max)
@@ -196,38 +195,42 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
             d = split_normalize(dat[i])
             dists[i], adj[i], Q, D, U = wass_adjoint_and_eval(d=d,u=s,dt=DT,ot=0.0,nt=nt,restrict=restrict,multi=True)
 
-            perform_plots = False
-            if( perform_plots ):
-                plt.rcParams['text.usetex'] = True
-                plt.figure(1)
-                plt.subplots_adjust(wspace=0.4, hspace=0.4)
-                plt.subplot(2,2,1)
-                plt.plot(t, dat[i][i1:i2], linewidth=1.0, label='Observed data')
-                plt.plot(t, syn[i][i1:i2], linestyle='dashed', linewidth=0.5, label='Synthetic')
-                plt.title(r'Raw Trace Data, trace %d'%i)
-                # formatter = ScalarFormatter(useMathText=True)
-                # formatter.set_scientific(True)
-                # plt.gca().yaxis.set_major_formatter(formatter)
-                ht.sn_plot()
-                plt.legend(fontsize=8)
+            if( omit > 0 and i >= len(adj) - omit ):
+                adj[i] = 0.0
+                dists[i] = 0.0
 
-                plt.subplot(2,2,2)
-                plt.scatter(t, np.log(dat[i][i1:i2]) / np.log(10.0), marker='.', s=0.2, label='Observed data')
-                plt.scatter(t, np.log(syn[i][i1:i2]) / np.log(10.0), marker='*', s=0.2, label='Synthetic')
-                plt.title(r'Log-scale Trace Data, trace %d'%i)
-                plt.legend(fontsize=8)
+                perform_plots = False
+                if( perform_plots ):
+                    plt.rcParams['text.usetex'] = True
+                    plt.figure(1)
+                    plt.subplots_adjust(wspace=0.4, hspace=0.4)
+                    plt.subplot(2,2,1)
+                    plt.plot(t, dat[i][i1:i2], linewidth=1.0, label='Observed data')
+                    plt.plot(t, syn[i][i1:i2], linestyle='dashed', linewidth=0.5, label='Synthetic')
+                    plt.title(r'Raw Trace Data, trace %d'%i)
+                    # formatter = ScalarFormatter(useMathText=True)
+                    # formatter.set_scientific(True)
+                    # plt.gca().yaxis.set_major_formatter(formatter)
+                    ht.sn_plot()
+                    plt.legend(fontsize=8)
 
-                plt.subplot(2,2,3)
-                plt.plot(t,adj[i],linestyle='-',label='W2 adjoint')
-                ht.sn_plot()
-                plt.title(r'$W_2$ Adjoint for trace %d'%i)
+                    plt.subplot(2,2,2)
+                    plt.scatter(t, np.log(dat[i][i1:i2]) / np.log(10.0), marker='.', s=0.2, label='Observed data')
+                    plt.scatter(t, np.log(syn[i][i1:i2]) / np.log(10.0), marker='*', s=0.2, label='Synthetic')
+                    plt.title(r'Log-scale Trace Data, trace %d'%i)
+                    plt.legend(fontsize=8)
 
-                plt.subplot(2,2,4)
-                plt.plot(t,syn[i][i1:i2] - dat[i][i1:i2], linestyle='-', linewidth=0.5, label='L2 adjoint')
-                ht.sn_plot()
-                plt.title('$L_2$ Adjoint for trace %d'%i)
-                plt.savefig('OUTPUT_FILES/adjoint_%d.pdf'%i)
-                plt.clf()
+                    plt.subplot(2,2,3)
+                    plt.plot(t,adj[i],linestyle='-',label='W2 adjoint')
+                    ht.sn_plot()
+                    plt.title(r'$W_2$ Adjoint for trace %d'%i)
+
+                    plt.subplot(2,2,4)
+                    plt.plot(t,syn[i][i1:i2] - dat[i][i1:i2], linestyle='-', linewidth=0.5, label='L2 adjoint')
+                    ht.sn_plot()
+                    plt.title('$L_2$ Adjoint for trace %d'%i)
+                    plt.savefig('OUTPUT_FILES/adjoint_%d.pdf'%i)
+                    plt.clf()
         output_file.write('{:e}\n'.format(sum(dists)))
         print('Total W2 misfit: %.2e'%(sum(dists)))
     else:

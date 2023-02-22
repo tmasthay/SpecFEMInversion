@@ -8,9 +8,31 @@ currentdir=`pwd`
 
 cd $currentdir
 
+rm -f adj_seismogram.py
+ln -s ../adj_seismogram.py
+rm -f model_add_Gaussian_perturbation.py
+ln -s ../model_add_Gaussian_perturbation.py
+rm -f model_update.py
+ln -s ../model_update.py
+rm -f kernel_evaluation_postprocessing.py
+ln -s ../kernel_evaluation_postprocessing.py
+rm -f helper_functions.py
+ln -s ../helper_functions.py
+rm -f helper_tyler.py
+ln -s ../helper_tyler.py
+
+rm -f wasserstein.py
+ln -s ../wasserstein.py
+
+rm -f change_simulation_type.pl
+ln -s $SPEC/utils/change_simulation_type.pl
+
+rm -f create_STATIONS_file.py
+ln -s ../create_STATIONS_file.py
+
 # Make sure to restore previous state
 cp DATA/Par_file_ref DATA/Par_file
-python helper_tyler.py 2
+./helper_tyler.py 2
 
 ##############################################
 ## Elastic benchmark
@@ -96,28 +118,6 @@ mkdir -p MODELS/initial_model MODELS/target_model
 
 mkdir -p KERNELS
 rm -rf KERNELS/*
-
-rm -f adj_seismogram.py
-ln -s ../adj_seismogram.py
-rm -f model_add_Gaussian_perturbation.py
-ln -s ../model_add_Gaussian_perturbation.py
-rm -f model_update.py
-ln -s ../model_update.py
-rm -f kernel_evaluation_postprocessing.py
-ln -s ../kernel_evaluation_postprocessing.py
-rm -f helper_functions.py
-ln -s ../helper_functions.py
-rm -f helper_tyler.py
-ln -s ../helper_tyler.py
-
-rm -f wasserstein.py
-ln -s ../wasserstein.py
-
-rm -f change_simulation_type.pl
-ln -s $SPEC/utils/change_simulation_type.pl
-
-rm -f create_STATIONS_file.py
-ln -s ../create_STATIONS_file.py
 
 # creates STATIONS file
 ./create_STATIONS_file.py $nlinesx $nlinesz

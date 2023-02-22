@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
@@ -33,6 +35,14 @@ class ht:
     def sco(s, split_output=False):
         s = co(s,shell=True).decode('utf-8')
         return s.split('\n') if split_output else s
+    
+    def read_close(filename):
+        with open(filename, 'r') as f:
+            return f.read()
+    
+    def write_close(s, filename):
+        with open(filename, 'w') as f:
+            f.write(s)
 
     def get_params(filename='DATA/Par_file_ref', type_map=dict()):
         try:
@@ -100,37 +110,41 @@ class ht:
             curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
-    def add_artificial_receivers(src, filename='DATA/Par_file', dz=1.0, dx=1.0):
-        sp = lambda a,b: '%s%s= %s\n'%(a,28 * ' ',b)
-        N = 3
-        s = ''
-        for i in range(-1,N-1):
-            s += '# ARTIFICIAL RECEIVER GROUP %d\n'%(i+2)
-            s += sp('nrec', str(N))
-            s += sp('xdeb', '%.1f'%(src[0]-dx))
-            s += sp('zdeb', '%.1f'%(src[1]+i*dz))
-            s += sp('xfin', '%.1f'%(src[0]+dx))
-            s += sp('zfin', '%.1f'%(src[1]+i*dz))
-            s += 'record_at_surface_same_vertical = .false.\n\n'
-        start_tag = '# ARTIFICIAL RECEIVERS START'
-        f = open(filename, 'r')
-        text = f.read()
-        f.close()
-        text = text.replace(start_tag, start_tag + '\n' + s)
-        print(re.findall(r'%s'%start_tag, text))
-        f = open(filename, 'w')
-        f.write(text)
+    def add_artificial_receivers(src, filename='DATA/Par_file', dz=1.0, dx=1.0, delete=False):
+        if( not delete ):
+            sp = lambda a,b: '%s%s= %s\n'%(a,28 * ' ',b)
+            N = 3
+            s = ''
+            for i in range(-1,N-1):
+                s += '# ARTIFICIAL RECEIVER GROUP %d\n'%(i+2)
+                s += sp('nrec', str(N))
+                s += sp('xdeb', '%.1f'%(src[0]-dx))
+                s += sp('zdeb', '%.1f'%(src[1]+i*dz))
+                s += sp('xfin', '%.1f'%(src[0]+dx))
+                s += sp('zfin', '%.1f'%(src[1]+i*dz))
+                s += 'record_at_surface_same_vertical = .false.\n\n'
+            start_tag = '# ARTIFICIAL RECEIVERS START'
+            f = open(filename, 'r')
+            text = f.read()
+            f.close()
+            text = text.replace(start_tag, start_tag + '\n' + s)
+            print(re.findall(r'%s'%start_tag, text))
+            f = open(filename, 'w')
+            f.write(text)
+        else:
+            s = ht.read_close(filename)
+            start_tag = '# ARTIFICIAL RECEIVERS START'
+            end_tag = '# ARTIFICIAL RECEIVERS END'
+            inner_text = s.split(start_tag)[-1].split(end_tag)[0]
+            s = s.replace(inner_text, '')
+            ht.write_close(s, filename)
     
     def update_source(xs, zs, filename='DATA/SOURCE'):
-        f = open(filename, 'r')
-        s = f.read()
-        f.close()
+        s = ht.read_close(filename)
         t = 28 * ' '
         s = re.sub('xs.*=.*', 'xs%s= %.1f'%(t,xs), s)
         s = re.sub('zs.*=.*', 'zs%s= %.1f'%(t,zs), s)
-        f = open(filename, 'w')
-        f.write(s)
-        f.close()
+        ht.write_close(s,filename)
 
 if( __name__ == "__main__" ):
     mode = int(sys.argv[1])
@@ -154,9 +168,12 @@ if( __name__ == "__main__" ):
         plt.title('Frequency comparison')
         plt.savefig('freq.pdf')
     elif( mode == 2 ):
+        delete = False
+        if( len(sys.argv) == 3 ):
+            delete = sys.argv[2].lower()[0] == 't'
         v = ht.src_pull()
         src = [v['xs'][0], v['zs'][0]]
-        ht.add_artificial_receivers(src)
+        ht.add_artificial_receivers(src, delete=delete)
     elif( mode == 3 ):
         xs = float(sys.argv[2])
         zs = float(sys.argv[3])

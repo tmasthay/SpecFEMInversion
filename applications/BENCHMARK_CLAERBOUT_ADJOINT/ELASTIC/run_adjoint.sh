@@ -9,7 +9,6 @@ iter_no=$1
 
 #make sure we have right Par_file version
 cp DATA/Par_file_inter DATA/Par_file
-python helper_tyler.py 2
 
 if [[ $iter_no == 1 ]]
 then
@@ -144,6 +143,10 @@ update_percent=$(cat setup.sh | grep "perturb_percent=" | sed 's/perturb_percent
 echo "> ./model_update.py $NPROC $SIM_TYPE $update_percent"
 echo
 ./model_update.py $NPROC $SIM_TYPE $update_percent
+
+#./helper_tyler.py 3
+./helper_tyler.py 2 True
+./helper_tyler.py 2
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

@@ -33,11 +33,12 @@ if( __name__ == "__main__" ):
     os.system('echo "%d seconds for setup" > DATA/setup.log'%(time.time() - very_start))
 
     misfits = [np.inf]
-    max_iter = 5
+    max_iter = 2
     tol = 0.0
     iter = 1
     mode = 'l2' if len(sys.argv) < 2 else sys.argv[1]
     save_every = 1
+    verbose = True
 
     dirs = ['OUTPUT_FILES.syn.forward', 
         'OUTPUT_FILES.syn.adjoint', 
@@ -55,7 +56,10 @@ if( __name__ == "__main__" ):
         print('ITERATION %d'%iter)
         os.system('mkdir FINAL_RESULTS/%d'%(iter))
         os.system('sleep 1')
-        os.system('./run_adjoint.sh %d %s > OUTPUT_FILES/%d.log'%(iter, mode, iter))
+        if( verbose ):
+            os.system('./run_adjoint.sh %d %s'%(iter, mode))
+        else:
+            os.system('./run_adjoint.sh %d %s > OUTPUT_FILES/%d.log'%(iter, mode, iter))
         misfitx = float(co('cat misfitx.log | tail -n 1', shell=True).decode('utf-8'))
         misfitz = float(co('cat misfitz.log | tail -n 1', shell=True).decode('utf-8'))
         misfits.append(misfitx + misfitz)
