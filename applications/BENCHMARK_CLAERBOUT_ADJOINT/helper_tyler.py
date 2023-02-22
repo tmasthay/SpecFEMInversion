@@ -8,6 +8,7 @@ import sys
 import re
 from glob import *
 import os
+from helper_functions import *
 
 class ht:
     class MathTextSciFormatter(mticker.Formatter):
@@ -145,6 +146,39 @@ class ht:
         s = re.sub('xs.*=.*', 'xs%s= %.1f'%(t,xs), s)
         s = re.sub('zs.*=.*', 'zs%s= %.1f'%(t,zs), s)
         ht.write_close(s,filename)
+
+    def gd_adjoint(filename, n=3, dx=1.0, dz=1.0):
+        if( type(filename) == str ):
+            hf = helper()
+            syn = hf.read_SU_file(filename)
+            N = n**2
+            mid = int(n/2)
+            smg = syn[:-N].reshape((n,n,syn.shape[1]))
+            assert(n == 3)
+            total =  (smg[mid+1,mid] - 2 * smg[mid,mid] + smg[mid-1,mid]) / dx**2 \
+                + (smg[mid,mid+1] - 2 * smg[mid,mid] + smg[mid,mid-1]) / dz**2 \
+                + (smg[mid+1,mid+1] + smg[mid-1,mid-1] \
+                    - smg[mid+1,mid-1] - smg[mid-1,mid+1]) / (4.0 * dz * dx)
+            return total
+        else:
+            a = ht.gd_adjoint(filename[0], n, dx, dz)
+            b = ht.gd_adjoint(filename[1], n, dx, dz)
+            return np.array([a,b])
+    
+    def make_ricker(nt, dt, f):
+        t = np.linspace(0,(nt-1)*dt, nt)
+        tmp1 = (1.0 - 2 * np.pi * f**2 * t**2)
+        tmp2 = np.exp(-np.pi**2 * f**2 * t**2)
+        np.save('DATA/ricker.npy', tmp1*tmp2)
+
+    def src_grad(filenames, sd, dt, n=3, dx=1.0, dz=1.0):
+        s = ht.gd_adjoint(filenames, n, dx, dz)
+        M = np.array([ [sd['Mxx'][0], sd['Mxz'][0]], [sd['Mxz'][0], sd['Mzz'][0]] ])
+        g = np.load('DATA/ricker.npy')
+        scaled = g * np.matmul(M,s)
+        integral = dt * np.trapz(scaled, axis=1)
+        np.save('OUTPUT_FILES/src_grad.npy', integral)
+        return integral
 
 if( __name__ == "__main__" ):
     mode = int(sys.argv[1])
