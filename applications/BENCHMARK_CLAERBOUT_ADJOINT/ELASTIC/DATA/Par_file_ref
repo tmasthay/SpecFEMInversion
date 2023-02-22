@@ -21,7 +21,7 @@ NPROC                           = 1              # number of processes
 
 # time step parameters
 # total number of time steps
-NSTEP                           = 600
+NSTEP                           = 1000
 
 # duration of a time step (see section "How to choose the time step" of the manual for how to do this)
 DT                              = 0.00035
@@ -108,7 +108,7 @@ NO_BACKWARD_RECONSTRUCTION      = .false.
 #-----------------------------------------------------------
 
 # source parameters
-NSOURCES                        = 3              # number of sources (source information is then read from the DATA/SOURCE file)
+NSOURCES                        = 2              # number of sources (source information is then read from the DATA/SOURCE file)
 force_normal_to_surface         = .false.        # angleforce normal to surface (external mesh and curve file needed)
 
 # use an existing initial wave field as source or start from zero (medium initially at rest)
@@ -167,14 +167,33 @@ save_binary_seismograms_double  = .false.        # save seismograms in double pr
 SU_FORMAT                       = .true.         # output single precision binary seismograms in Seismic Unix format (adjoint traces will be read in the same format)
 
 # use an existing STATION file found in ./DATA or create a new one from the receiver positions below in this Par_file
-use_existing_STATIONS           = .true.
+#use_existing_STATIONS           = .true.
+use_existing_STATIONS           = .false.
 
 # number of receiver sets (i.e. number of receiver lines to create below)
-nreceiversets                   = 1
+nreceiversets                   = 2
 
 # orientation
 anglerec                        = 0.d0           # angle to rotate components at receivers
 rec_normal_to_surface           = .false.        # base anglerec normal to surface (external mesh and curve file needed)
+
+# first receiver set (repeat these 6 lines and adjust nreceiversets accordingly)
+nrec                            = 1             # number of receivers
+xdeb                            = 100.           # first receiver x in meters
+zdeb                            = 10.          # first receiver z in meters
+xfin                            = 100.          # last receiver x in meters (ignored if only one receiver)
+zfin                            = 10.          # last receiver z in meters (ignored if only one receiver)
+record_at_surface_same_vertical = .false.         # receivers inside the medium or at the surface (z values are ignored if this is set to true, they are replaced with the topography height)
+
+# second receiver set
+nrec                            = 1             # number of receivers
+xdeb                            = 500.          # first receiver x in meters
+zdeb                            = 10.          # first receiver z in meters
+xfin                            = 500.          # last receiver x in meters (ignored if only one receiver)
+zfin                            = 10.             # last receiver z in meters (ignored if only one receiver)
+record_at_surface_same_vertical = .true.        # receivers inside the medium or at the surface (z values are ignored if this is set to true, they are replaced with the topography height)
+
+# *** ARTIFICIAL RECEIVERS HERE ***
 
 
 #-----------------------------------------------------------

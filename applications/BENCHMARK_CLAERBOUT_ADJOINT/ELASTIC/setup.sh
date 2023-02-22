@@ -109,6 +109,9 @@ ln -s ../helper_functions.py
 rm -f helper_tyler.py
 ln -s ../helper_tyler.py
 
+rm -f wasserstein.py
+ln -s ../wasserstein.py
+
 rm -f change_simulation_type.pl
 ln -s $SPEC/utils/change_simulation_type.pl
 

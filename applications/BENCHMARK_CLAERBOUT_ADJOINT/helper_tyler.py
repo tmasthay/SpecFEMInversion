@@ -52,7 +52,9 @@ class ht:
     def par_pull(filename='DATA/Par_file_ref'):
         par_map = {'NSTEP': int,
             'DT': float,
-            'NSOURCES': int
+            'NSOURCES': int,
+            'NPROC': int,
+            'SIMULATION_TYPE': int
         }
         return ht.get_params(filename, par_map)
 
@@ -78,6 +80,24 @@ class ht:
             tmp3 = np.exp(-np.pi**2 * f**2 * t**2)
             curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
+
+    def add_artificial_receivers(src, filename='DATA/Par_file', dz=1.0, dx=1.0):
+        sp = lambda a,b: '%s%s= %s\n'%(a,b)
+        s = sp('nrec', str(9))
+        s += sp('xdeb', '%.1f'%(src[0]-dx))
+        s += sp('zdeb', '%.1f'%(src[1]-dz))
+        s += sp('xfin', '%.1f'%(src[0]+dx))
+        s += sp('zfin', '%.1f'%(src[1]+dz))
+        s += 'record_at_surface_same_vertical = .false.'
+        start_tag = '# *** ARTIFICIAL RECEIVERS START ***'
+        f = open(filename, 'r')
+        text = f.read()
+        f.close()
+        text = text.replace(start_tag, start_tag + '\n' + s)
+        f = open(filename, 'w')
+        f.write(text)
+
+
 
 if( __name__ == "__main__" ):
     ht.create_ricker_time_derivative('ELASTIC/DATA')

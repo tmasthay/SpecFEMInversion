@@ -16,7 +16,7 @@ from wasserstein import *
 from subprocess import check_output as co
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
-from helper_tyler import Tyler
+from helper_tyler import *
 
 #########################################
 
@@ -203,7 +203,7 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
                 # formatter = ScalarFormatter(useMathText=True)
                 # formatter.set_scientific(True)
                 # plt.gca().yaxis.set_major_formatter(formatter)
-                Tyler.sn_plot()
+                ht.sn_plot()
                 plt.legend(fontsize=8)
 
                 plt.subplot(2,2,2)
@@ -214,12 +214,12 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
 
                 plt.subplot(2,2,3)
                 plt.plot(t,adj[i],linestyle='-',label='W2 adjoint')
-                Tyler.sn_plot()
+                ht.sn_plot()
                 plt.title(r'$W_2$ Adjoint for trace %d'%i)
 
                 plt.subplot(2,2,4)
                 plt.plot(t,syn[i][i1:i2] - dat[i][i1:i2], linestyle='-', linewidth=0.5, label='L2 adjoint')
-                Tyler.sn_plot()
+                ht.sn_plot()
                 plt.title('$L_2$ Adjoint for trace %d'%i)
                 plt.savefig('OUTPUT_FILES/adjoint_%d.pdf'%i)
                 plt.clf()
