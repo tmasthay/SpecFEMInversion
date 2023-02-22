@@ -116,12 +116,21 @@ class ht:
         print(re.findall(r'%s'%start_tag, text))
         f = open(filename, 'w')
         f.write(text)
-
-
+    
+    def update_source(xs, zs, filename='DATA/SOURCE'):
+        f = open(filename, 'r')
+        s = f.read()
+        f.close()
+        t = 28 * ' '
+        s = re.sub('xs.*=.*', 'xs%s= %.1f'%(t,xs), s)
+        s = re.sub('zs.*=.*', 'zs%s= %.1f'%(t,zs), s)
+        f = open(filename, 'w')
+        f.write(s)
+        f.close()
 
 if( __name__ == "__main__" ):
-    test_case = int(sys.argv[1])
-    if( test_case == 1 ):
+    mode = int(sys.argv[1])
+    if( mode == 1 ):
         ht.create_ricker_time_derivative('ELASTIC/DATA')
         par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
         nt = par_fields['NSTEP'][0]
@@ -140,10 +149,14 @@ if( __name__ == "__main__" ):
         plt.legend()
         plt.title('Frequency comparison')
         plt.savefig('freq.pdf')
-    elif( test_case == 2 ):
+    elif( mode == 2 ):
         v = ht.src_pull()
         src = [v['xs'][0], v['zs'][0]]
         ht.add_artificial_receivers(src)
+    elif( mode == 3 ):
+        xs = float(sys.argv[2])
+        zs = float(sys.argv[3])
+        ht.update_source(xs,zs)
 
 
 

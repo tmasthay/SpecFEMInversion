@@ -9,6 +9,8 @@ iter_no=$1
 
 #make sure we have right Par_file version
 cp DATA/Par_file_inter DATA/Par_file
+python helper_tyler.py 2
+
 if [[ $iter_no == 1 ]]
 then
     rm misfitx.log
