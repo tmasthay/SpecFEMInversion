@@ -9,6 +9,7 @@ import re
 from glob import *
 import os
 from helper_functions import *
+from scipy.interpolate import RectBivariateSpline as RBS
 
 class ht:
     class MathTextSciFormatter(mticker.Formatter):
@@ -151,7 +152,7 @@ class ht:
         s = re.sub('zs.*=.*', 'zs%s= %.1f'%(t,zs), s)
         ht.write_close(s,filename)
 
-    def gd_adjoint(filename, n=3, dx=1.0, dz=1.0, use_double=False):
+    def gd_adjoint(filename, n=3, dx=1.0, dz=1.0, kx=3, ky=3):
         hf = helper()
         f1 = hf.read_SU_file(filename[0])
         f2 = hf.read_SU_file(filename[1])
@@ -159,48 +160,35 @@ class ht:
         mid = int(n/2)
         v1 = f1[-N:].reshape((n,n,f1.shape[-1]))
         v2 = f2[-N:].reshape((n,n,f2.shape[-1]))
-        assert( (v1 == f1.reshape((n,n,f1.shape[-1]))).all() )
-        assert( (v2 == f2.reshape((n,n,f2.shape[-1]))).all() )
-        # for i in range(n):
-        #     for j in range(n):
-        #         plt.subplot(n,1,j+1)
-        #         plt.plot(range(smg1.shape[-1]), smg1[i][j], label='(%d,%d)'%(i,j))
-        #         plt.legend()
-        #     plt.savefig('1-%d.pdf'%(i))
-        #     plt.clf()
-        # for i in range(n):
-        #     for j in range(n):
-        #         plt.subplot(n,1,j+1)
-        #         plt.plot(range(smg2.shape[-1]), smg2[i][j], label='(%d,%d)'%(i,j))
-        #         plt.legend()
-        #     plt.savefig('2-%d.pdf'%(i))
-        #     plt.clf()
-        if( use_double ):
-            smg1 = np.float64(smg1)
-            smg2 = np.float64(smg2)
-            dx = np.float64(dx)
-            dz = np.float64(dz)
-        assert(n == 3)
-        # df1_dx_dx = (smg1[mid+1,mid] - 2 * smg1[mid,mid] + smg1[mid-1,mid]) / dx**2
-        # df2_dz_dz = (smg2[mid,mid+1] - 2 * smg2[mid,mid] + smg2[mid,mid-1]) / dz**2
-        
-        # df1_dx_dz = (smg1[mid+1,mid+1] + smg1[mid-1,mid-1] \
-        #     - smg1[mid+1,mid-1] - smg1[mid-1,mid+1]) / (4.0 * dx * dz)
-        # df2_dx_dz = (smg2[mid+1,mid+1] + smg2[mid-1,mid-1] \
-        #     - smg2[mid+1,mid-1] - smg2[mid-1, mid+1]) / (4.0 * dx * dz)
-        # v1 = np.transpose(v1, axes=(1,0,2))
-        # v2 = np.transpose(v2, axes=(1,0,2))
+        nt = v1.shape[-1]
+        X = np.array([i*dx for i in range(-mid,mid+1)])
+        Z = np.array([i*dz for i in range(-mid,mid+1)])
+        print(X)
+        print(Z)
+        print(v1.shape)
+        print(v2.shape)
+        splines1 = [RBS(X,Z,v1[:,:,i],kx=kx,ky=ky) for i in range(nt)]
+        splines2 = [RBS(X,Z,v2[:,:,i],kx=kx,ky=ky) for i in range(nt)]
+        mixed1 = np.array([u.partial_derivative(1,1)(0.0,0.0) for u in splines1])
+        mixed2 = np.array([u.partial_derivative(1,1)(0.0,0.0) for u in splines2])
+        laplace1 = np.array([u.partial_derivative(2,0)(0.0,0.0) for u in splines1])
+        laplace2 = np.array([u.partial_derivative(0,2)(0.0,0.0) for u in splines2])
 
-        df1_dx_dx = (v1[0,1] - 2 * v1[1,1] + v1[2,1]) / dx**2
-        df2_dz_dz = (v2[1,0] - 2 * v2[1,1] + v2[1,2]) / dz**2 
+        grad_div1 = laplace1 + mixed2
+        grad_div2 = laplace2 + mixed1
 
-        df1_dx_dz = (v1[2,2] + v1[0,0] - v1[2,0] - v1[0,2]) / (4.0 * dx * dz)
-        df2_dx_dz = (v2[2,2] + v2[0,0] - v2[2,0] - v2[0,2]) / (4.0 * dx * dz)
+        grad_div1 = grad_div1.reshape((nt,))
+        grad_div2 = grad_div2.reshape((nt,))
 
-        grad_div1 = df1_dx_dx + df2_dx_dz
-        grad_div2 = df2_dz_dz + df1_dx_dz
-        val = np.array([grad_div1,grad_div2])
-        return val
+        # df1_dx_dx = (v1[0,1] - 2 * v1[1,1] + v1[2,1]) / dx**2
+        # df2_dz_dz = (v2[1,0] - 2 * v2[1,1] + v2[1,2]) / dz**2 
+
+        # df1_dx_dz = (v1[2,2] + v1[0,0] - v1[2,0] - v1[0,2]) / (4.0 * dx * dz)
+        # df2_dx_dz = (v2[2,2] + v2[0,0] - v2[2,0] - v2[0,2]) / (4.0 * dx * dz)
+
+        # grad_div1 = df1_dx_dx + df2_dx_dz
+        # grad_div2 = df2_dz_dz + df1_dx_dz
+        return np.array([grad_div1,grad_div2])
     
     def make_ricker(nt, dt, f, filename='OUTPUT_FILES/ricker.npy'):
         t = np.linspace(0,(nt-1)*dt, nt)
