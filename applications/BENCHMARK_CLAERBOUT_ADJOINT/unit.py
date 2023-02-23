@@ -3,10 +3,13 @@ import numpy as np
 from scipy.special import erf, erfinv
 import matplotlib.pyplot as plt
 import os
+from helper_tyler import *
+from helper_functions import *
 
 os.system('mkdir -p unit_test_plots/')
 os.system('mkdir -p unit_test_plots/wasserstein/')
 
+### BEGIN UNIT TESTS FOR wasserstein.py ###
 def get_gauss(mu, sig, a, b, nt):
     nt = int(nt)
     t = np.linspace(a, b, nt)
@@ -129,3 +132,54 @@ def test_split_normalization():
     plt.title('Splitting normalization')
     plt.savefig('unit_test_plots/wasserstein/split_normalize.pdf')
     assert valid, "Incorrect normalization"
+### END TESTS FOR wasserstein.py ###
+
+unit_test_dir = 'unit_tests'
+curr_test_env = 'helper_tyler'
+curr_dir = '%s/%s'%(unit_test_dir, curr_test_env)
+os.system('mkdir -p %s/'%unit_test_dir)
+os.system('mkdir -p %s'%curr_dir)
+
+### BEGIN TESTS FOR helper_tyler.py ###
+def test_gd_adjoint():
+    hf = helper()
+
+    filenames = ['%s/xcomp.su'%curr_dir, '%s/zcomp.su'%curr_dir]
+    xs = 0.5
+    zs = 0.8
+    dx = 0.001
+    dz = 0.001
+    n = 3
+
+    domain = [ [(xs+i*dx, zs+j*dz) for i in range(-1,2)] for j in range(-1,2) ]
+    domain = np.array(domain).reshape((9,2))
+    f1 = lambda x,z,t: x**2*z**2*t**2
+    f2 = lambda x,z,t: 0.0
+
+    t = np.linspace(0, 1, 100)
+    vals1 = np.array([ [f1(xx,zz,tt) for tt in t] for (xx,zz) in domain])
+    vals2 = np.array([ [f2(xx,zz,tt) for tt in t] for (xx,zz) in domain])
+    hf.write_SU_file(vals1, filenames[0])
+    hf.write_SU_file(vals2, filenames[1])
+
+    output = ht.gd_adjoint(filenames, n, dx, dz)
+
+    f3 = lambda x,z,t: 2*z**2*t**2
+    f4 = lambda x,z,t: 0.0
+    ref = np.transpose([ (f3(xs,zs,tt), f4(xs,zs,tt)) for tt in t])
+    do_plotting = True
+    if( do_plotting ):
+        plt.subplot(2,1,1)
+        plt.plot(t, output[0], label='X computed')
+        plt.plot(t, ref[0], linestyle='dashdot', label='X ref')
+        plt.legend()
+
+        plt.subplot(2,1,2)
+        plt.plot(t, output[1], label='Z computed')
+        plt.plot(t, ref[1], linestyle='dashdot', label='Z ref')
+        plt.legend()
+        plt.savefig('%s/gd_adjoint.pdf'%curr_dir)
+
+    err = np.max(abs(output - ref))
+    tol = 1e-4
+    assert err <= tol, '(computed, target) = (%.2e, %.2e)'%(err, tol)

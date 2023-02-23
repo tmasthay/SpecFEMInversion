@@ -45,7 +45,7 @@ class ht:
         with open(filename, 'w') as f:
             f.write(s)
 
-    def apppend_close(s, filename):
+    def append_close(s, filename):
         with open(filename, 'a') as f:
             f.write(s)
 
@@ -157,7 +157,7 @@ class ht:
             syn = hf.read_SU_file(filename)
             N = n**2
             mid = int(n/2)
-            smg = syn[:-N].reshape((n,n,syn.shape[1]))
+            smg = syn[-N:].reshape((n,n,syn.shape[1]))
             assert(n == 3)
             total =  (smg[mid+1,mid] - 2 * smg[mid,mid] + smg[mid-1,mid]) / dx**2 \
                 + (smg[mid,mid+1] - 2 * smg[mid,mid] + smg[mid,mid-1]) / dz**2 \
@@ -224,9 +224,9 @@ if( __name__ == "__main__" ):
         dt = pp['DT'][0]
         ht.make_ricker(nt,dt,freq)
         bd = 'OUTPUT_FILES.syn.adjoint'
-        filenames = ['%s/Ux_file_single_d.su'%bd, '%s/Uz_file_single_d.su']
+        filenames = ['%s/Ux_file_single_d.su'%bd, '%s/Uz_file_single_d.su'%bd]
         s = ht.src_grad(filenames, sp, dt)
-        ht.append_close(s, 'OUTPUT_FILES/grad.log')
+        ht.append_close(str(s), 'OUTPUT_FILES/grad.log')
     elif( mode == 5 ):
         xs = float(sys.argv[2])
         zs = float(sys.argv[3])

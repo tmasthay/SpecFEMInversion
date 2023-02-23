@@ -648,7 +648,13 @@ class helper(object):
             header3_values = array.array('h')    # signed short - 2 bytes
             header3_values.fromlist(np.zeros(2,dtype='h').tolist())
             # header3(1) = NINT(sampling_deltat*1.0d6, kind=2)  ! deltat (unit: 10^{-6} second)
-            header3_values[0] = self.sampling_DT
+            try:
+                header3_values[0] = self.sampling_DT
+            except:
+                try:
+                    header3_values[0] = int(self.sampling_DT)
+                except:
+                    header3_values[0] = np.float16(self.sampling_DT)
 
             # header4
             header4_values = array.array('f')    # real - 4 bytes
