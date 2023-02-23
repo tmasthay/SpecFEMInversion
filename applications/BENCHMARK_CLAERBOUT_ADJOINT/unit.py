@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import os
 from helper_tyler import *
 from helper_functions import *
+from scipy.interpolate import RectBivariateSpline
 
 os.system('mkdir -p unit_test_plots/')
 os.system('mkdir -p unit_test_plots/wasserstein/')
@@ -152,11 +153,12 @@ if( test_helper_tyler ):
         filenames = ['%s/xcomp.su'%curr_dir, '%s/zcomp.su'%curr_dir]
         xs = 1.0
         zs = 1.0
-        dx = 1e-1
-        dz = 1e-1
+        dx = 1e-5
+        dz = 1e-5
         n = 3
 
         domain = [ [(xs+j*dx, zs+i*dz) for i in range(-1,2)] for j in range(-1,2) ]
+        spline_domain = [ [(xs+j*dx, zs+i*dz) for i in range(-3,4)] for j in range(-3,4) ]
         print(str(domain))
         domain = np.array(domain).reshape((9,2))
         print(domain)
@@ -164,7 +166,7 @@ if( test_helper_tyler ):
         # print(domain)
 
         f1 = lambda x,z,t: np.sin(t*x*z)
-        f2 = lambda x,z,t: np.exp(t*x*z**2)
+        f2 = lambda x,z,t: np.exp(t*x*z)
 
         t = np.linspace(0, 1, 100)
         vals1 = np.array([ [f1(xx,zz,tt) for tt in t] for (xx,zz) in domain])
@@ -180,17 +182,47 @@ if( test_helper_tyler ):
         v1 = vals1.reshape((n,n,vals1.shape[-1]))
         v2 = vals2.reshape((n,n,vals2.shape[-1]))
 
-        # v1 = np.transpose(v1, axes=(1,0,2))
-        # v2 = np.transpose(v2, axes=(1,0,2))
+        # # v1 = np.transpose(v1, axes=(1,0,2))
+        # # v2 = np.transpose(v2, axes=(1,0,2))
 
-        df1_dx_dx = (v1[0,1] - 2 * v1[1,1] + v1[2,1]) / dx**2
-        df2_dz_dz = (v2[1,0] - 2 * v2[1,1] + v2[1,2]) / dz**2 
+        # df1_dx_dx = (v1[0,1] - 2 * v1[1,1] + v1[2,1]) / dx**2
+        # df2_dz_dz = (v2[1,0] - 2 * v2[1,1] + v2[1,2]) / dz**2 
 
-        df1_dx_dz = (v1[2,2] + v1[0,0] - v1[2,0] - v1[0,2]) / (4.0 * dx * dz)
-        df2_dx_dz = (v2[2,2] + v2[0,0] - v2[2,0] - v2[0,2]) / (4.0 * dx * dz)
+        # df1_dx_dz = (v1[2,2] + v1[0,0] - v1[2,0] - v1[0,2]) / (4.0 * dx * dz)
+        # df2_dx_dz = (v2[2,2] + v2[0,0] - v2[2,0] - v2[0,2]) / (4.0 * dx * dz)
 
-        grad_div1 = df1_dx_dx + df2_dx_dz
-        grad_div2 = df2_dz_dz + df1_dx_dz
+        # grad_div1 = df1_dx_dx + df2_dx_dz
+        # grad_div2 = df2_dz_dz + df1_dx_dz
+        X=np.array([xs + i*dx for i in range(-3,4)])
+        Z=np.array([zs + i*dz for i in range(-3,4)])
+        w1 = np.array([[[f1(xs+j*dx,zs+i*dz,tt) for tt in t] for i in range(-3,4)] for j in range(-3,4)])
+        w2 = np.array([[[f2(xs+j*dx,zs+i*dz,tt) for tt in t] for i in range(-3,4)] for j in range(-3,4)])
+        print(X.shape)
+        print(Z.shape)
+        print(w1.shape)
+        print(w2.shape)
+        kind = 'cubic'
+        print('Start')
+        interpolator1 = [RectBivariateSpline(X,Z,w1[:,:,i]) for i in range(len(t))]
+        print('end')
+        interpolator2 = [RectBivariateSpline(X,Z,w2[:,:,i]) for i in range(len(t))]
+
+        print(interpolator1[50](1,1))
+
+        mixed1 = np.array([u.partial_derivative(1,1)(xs,zs) for u in interpolator1])
+        mixed2 = np.array([u.partial_derivative(1,1)(xs,zs) for u in interpolator2])
+        laplace1 = np.array([u.partial_derivative(2,0)(xs,zs) for u in interpolator1])
+        laplace2 = np.array([u.partial_derivative(0,2)(xs,zs) for u in interpolator2])
+        print('grad div about to be built')
+
+        grad_div1 = laplace1 + mixed2
+        grad_div2 = laplace2 + mixed1
+
+        grad_div1 = grad_div1.reshape((max(grad_div1.shape),))
+        grad_div2 = grad_div2.reshape((max(grad_div2.shape),))
+
+        print('grad div built: %s'%(str(grad_div1.shape)))
+
 
         u1 = v1[:,:,0]
         u2 = v2[:,:,0]
@@ -209,27 +241,28 @@ if( test_helper_tyler ):
         # print('v2 = %s'%(str(v2)))
 
 
-        output = ht.gd_adjoint(filenames, n=n, dx=dx, dz=dz, use_double=False)
+        #output = ht.gd_adjoint(filenames, n=n, dx=dx, dz=dz, use_double=False)
         # output = np.array([grad_div1, grad_div2])
 
-        f3 = lambda x,z,t: p*(p-1)*x**(p-2)
-        f4 = lambda x,z,t: q*(q-1)*z**(p-2)
+        f3 = lambda x,z,t: -(t*z)**2 * np.sin(t*x*z) + t**2 * x * z * np.exp(t*x*z) + t * np.exp(t*x*z)
+        f4 = lambda x,z,t: t*np.cos(t*x*z) - t**2 * x * z * np.sin(t*x*z) + (t*x)**2 * np.exp(t*x*z)
         ref = np.transpose([ (f3(xs,zs,tt), f4(xs,zs,tt)) for tt in t])
         do_plotting = True
+        spline_test = np.array([grad_div1, grad_div2])
         if( do_plotting ):
             plt.subplot(2,1,1)
-            plt.plot(t, output[0], label='X computed')
+            #plt.plot(t, output[0], label='X computed')
             plt.plot(t, ref[0], linestyle='dashdot', label='X ref')
-            plt.plot(t, grad_div1, linestyle=(0,(1,10)), label='ref_diff')
+            plt.plot(t, grad_div1, linestyle=(0,(1,10)), label='spline')
             plt.legend()
 
             plt.subplot(2,1,2)
-            plt.plot(t, output[1], label='Z computed')
+            #plt.plot(t, output[1], label='Z computed')
             plt.plot(t, ref[1], linestyle='dashdot', label='Z ref')
-            plt.plot(t, grad_div2, linestyle=(0,(1,10)), label='ref_diff')
+            plt.plot(t, grad_div2, linestyle=(0,(1,10)), label='spline')
             plt.legend()
             plt.savefig('%s/gd_adjoint.pdf'%curr_dir)
 
-        err = np.max(abs(output - ref))
+        err = np.max(abs(spline_test - ref))
         tol = 1e-4
         assert err <= tol, '(computed, target) = (%.2e, %.2e)'%(err, tol)
