@@ -45,6 +45,10 @@ class ht:
         with open(filename, 'w') as f:
             f.write(s)
 
+    def apppend_close(s, filename):
+        with open(filename, 'a') as f:
+            f.write(s)
+
     def get_params(filename='DATA/Par_file_ref', type_map=dict()):
         try:
             d = dict()
@@ -165,19 +169,21 @@ class ht:
             b = ht.gd_adjoint(filename[1], n, dx, dz)
             return np.array([a,b])
     
-    def make_ricker(nt, dt, f):
+    def make_ricker(nt, dt, f, filename='OUTPUT_FILES/ricker.npy'):
         t = np.linspace(0,(nt-1)*dt, nt)
         tmp1 = (1.0 - 2 * np.pi * f**2 * t**2)
         tmp2 = np.exp(-np.pi**2 * f**2 * t**2)
-        np.save('DATA/ricker.npy', tmp1*tmp2)
+        np.save(filename, tmp1*tmp2)
 
-    def src_grad(filenames, sd, dt, n=3, dx=1.0, dz=1.0):
+    def src_grad(filenames, sd, dt, n=3, dx=1.0, dz=1.0, 
+        ricker_file='OUTPUT_FILES/ricker.npy',
+        output_file='OUTPUT_FILES/src_grad.npy'):
         s = ht.gd_adjoint(filenames, n, dx, dz)
         M = np.array([ [sd['Mxx'][0], sd['Mxz'][0]], [sd['Mxz'][0], sd['Mzz'][0]] ])
-        g = np.load('DATA/ricker.npy')
+        g = np.load(ricker_file)
         scaled = g * np.matmul(M,s)
         integral = dt * np.trapz(scaled, axis=1)
-        np.save('OUTPUT_FILES/src_grad.npy', integral)
+        np.save(output_file, integral)
         return integral
 
 if( __name__ == "__main__" ):
@@ -208,7 +214,20 @@ if( __name__ == "__main__" ):
         v = ht.src_pull()
         src = [v['xs'][0], v['zs'][0]]
         ht.add_artificial_receivers(src, delete=delete)
-    elif( mode == 3 ):
+    elif( mode == 4 ):
+        pp = ht.par_pull()
+        sp = ht.src_pull()
+        freq = sp['f0'][0]
+        xs = sp['xs'][0]
+        zs = sp['zs'][0]
+        nt = pp['NSTEP'][0]
+        dt = pp['DT'][0]
+        ht.make_ricker(nt,dt,freq)
+        bd = 'OUTPUT_FILES.syn.adjoint'
+        filenames = ['%s/Ux_file_single_d.su'%bd, '%s/Uz_file_single_d.su']
+        s = ht.src_grad(filenames, sp, dt)
+        ht.append_close(s, 'OUTPUT_FILES/grad.log')
+    elif( mode == 5 ):
         xs = float(sys.argv[2])
         zs = float(sys.argv[3])
         ht.update_source(xs,zs)
