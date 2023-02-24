@@ -140,9 +140,11 @@ echo
 # takes absolute value of percent
 update_percent=$(cat setup.sh | grep "perturb_percent=" | sed 's/perturb_percent=//' | sed 's/-//')
 
-echo "> ./model_update.py $NPROC $SIM_TYPE $update_percent"
-echo
-./model_update.py $NPROC $SIM_TYPE $update_percent
+# echo "> ./model_update.py $NPROC $SIM_TYPE $update_percent"
+# echo
+# ./model_update.py $NPROC $SIM_TYPE $update_percent
+
+
 
 #./helper_tyler.py 3
 ./helper_tyler.py 2 True

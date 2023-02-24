@@ -10,6 +10,7 @@ from glob import *
 import os
 from helper_functions import *
 from scipy.interpolate import RectBivariateSpline as RBS
+from adj_seismogram import adj_seismogram
 
 class ht:
     class MathTextSciFormatter(mticker.Formatter):
@@ -36,7 +37,9 @@ class ht:
 
     def sco(s, split_output=False):
         s = co(s,shell=True).decode('utf-8')
-        return s.split('\n') if split_output else s
+        if( split_output ):
+            s = [e for e in s.split('\n') if e != '']
+        return s
     
     def read_close(filename):
         with open(filename, 'r') as f:
@@ -49,6 +52,9 @@ class ht:
     def append_close(s, filename):
         with open(filename, 'a') as f:
             f.write(s)
+
+    def get_last(filename, conversion=float):
+        return conversion(ht.sco('cat %s'%filename, True)[-1])
 
     def get_params(filename='DATA/Par_file_ref', type_map=dict()):
         try:
@@ -206,6 +212,99 @@ class ht:
         integral = dt * np.trapz(scaled, axis=1)
         np.save(output_file, integral)
         return integral
+
+    def run_simulator(mode, **kw):
+        output_name = kw.get('output_name', 'OUTPUT_FILES.syn.adjoint')
+        s = ''
+        if( mode.lower() == 'f' ):
+            if( 'output_name' not in kw.keys() ):
+                output_name = 'OUTPUT_FIILES.syn.forward'
+            s = '''
+                echo
+                echo "running data forward simulation"
+                echo
+                ./change_simulation_type.pl -f
+
+                # saving model files
+                sed -i '' "s/^SAVE_MODEL .*=.*/SAVE_MODEL = gll/" DATA/Par_file
+
+                ./run_this_example.sh > output.log
+
+                # checks exit code
+                if [[ $? -ne 0 ]]; then exit 1; fi
+
+                echo
+                mv -v output.log OUTPUT_FILES/
+
+                # backup copy
+                rm -rf %s
+                cp -rp OUTPUT_FILES %s
+
+                cp -v OUTPUT_FILES/*.su SEM/dat/
+            '''%(output_name, output_name)
+        elif( mode.lower() == 'a' ):
+            kernel = kw.get('kernel', 'KERNELS')
+            kernel = kernel.replace('/', '')
+            s = '''
+                ./change_simulation_type.pl -b
+
+                ./run_this_example.sh noclean > output.log
+
+                # checks exit code
+                if [[ $? -ne 0 ]]; then exit 1; fi
+
+                echo
+                mv -v output.log OUTPUT_FILES/output.kernel.log
+
+                # backup
+                rm -rf %s
+                cp -rp OUTPUT_FILES %s
+
+                # kernels
+                cp -vp OUTPUT_FILES/output.kernel.log %s/
+                cp -vp OUTPUT_FILES/*_kernel.* %s/
+            '''%(output_name, output_name, kernel, kernel)
+        else:
+            raise ValueError('Must be adjoint or forward mode')
+
+    def backtrack_and_update(g, src_param, misfit_type='l2', 
+        c_armijo=0.0001, alpha0=2.0, 
+        src_file='DATA/SOURCE', data_dir='OUTPUT_FILES.dat.forward', 
+        out_dir='OUTPUT_FILES.syn.backtrack', final_dir='OUTPUT_FILES.syn.forward'):
+
+        xs_orig = src_param['xs'][0]
+        zs_orig = src_param['zs'][0]
+        phi_prime0 = np.linalg.norm(g)**2
+        alpha = alpha0
+        misfitx = [float(e) for e in \
+            ht.read_close('misfitx.log').split('\n') if e != ''][-1]
+        misfitz = [float(e) for e in \
+            ht.read_close('misfitz.log').split('\n') if e != ''][-1]
+        ref_misfit = misfitx + misfitz
+        misfit = np.inf
+        while( misfit > ref_misfit + c_armijo * alpha * phi_prime0 ):
+            alpha = alpha / 2.0
+            print('Backtrack for alpha=%.2e'%alpha)
+            xs = xs_orig + alpha * g[0]
+            zs = zs_orig + alpha * g[1]
+            ht.update_source(xs,zs,src_file)
+            ht.run_simulator('forward', output_name=out_dir)
+            adj_seismogram('%s/Ux_file_single_d.su'%out_dir, 
+                '%s/Ux_file_single_d.su'%data_dir,
+                misfit_type,
+                '%s/misfitx.log'%out_dir)
+            adj_seismogram('%s/Uz_file_single_d.su'%out_dir, 
+                '%s/Uz_file_single_d.su'%data_dir,
+                misfit_type,
+                '%s/misfitz.log'%out_dir)
+            ref_misfit = ht.get_last('%s/misfitx.log'%out_dir) \
+                + ht.get_last('%s/misfitz.log'%out_dir)
+        print('Successfully backtracked! alpha=%.2e'%(alpha))
+        print('Moving backtrack directory "%s" to "%s"'%(out_dir, final_dir))
+        os.system('rm -rf %s'%final_dir)
+        os.system('mv %s %s'%(out_dir, final_dir))
+        return xs,zs,alpha
+            
 
 if( __name__ == "__main__" ):
     mode = int(sys.argv[1])

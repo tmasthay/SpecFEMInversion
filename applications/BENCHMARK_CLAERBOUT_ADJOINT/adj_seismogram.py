@@ -89,6 +89,22 @@ def adj_seismogram_get_files(NSTEP,DT,NPROC,SIM_TYPE):
 #------------------------------------------------------------------------------------------
 #
 
+def compute_misfit(syn, dat, misfit_type='l2'):
+    if( misfit_type == 'l2' ):
+        total_misfit = 0.0
+        for irec in range(len(adj)):
+            # single receiver trace
+            adj_trace = adj[irec]
+            # inner product
+            total_misfit += np.sum(adj_trace * adj_trace) * DT
+
+            print("")
+            output_file.write("{:e}\n".format(total_misfit))
+            print("{:e}".format(total_misfit))
+            print("")
+    elif( misfit_type == 'w2' ):
+
+
 def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', **kw):
     """
     creates adjoint seismograms
