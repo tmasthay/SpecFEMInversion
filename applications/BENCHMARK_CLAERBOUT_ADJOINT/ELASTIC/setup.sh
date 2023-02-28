@@ -44,7 +44,7 @@ SIM_TYPE=2
 perturb_param="vp"
 
 # perturbation (should be small enough for approximating S(m - m0) ~ S(m) - S(m0)
-perturb_percent=-0.1
+perturb_percent=-50.0
 
 # number of stations along x/z lines
 nlinesx=1
@@ -171,7 +171,8 @@ echo
 echo "setting up perturbed model..."
 echo "> ./model_add_Gaussian_perturbation.py $perturb_param $perturb_percent $NPROC "
 echo
-./model_add_Gaussian_perturbation.py $perturb_param $perturb_percent $NPROC
+#./model_add_Gaussian_perturbation.py $perturb_param $perturb_percent $NPROC
+./helper_tyler.py 6 $perturb_percent
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

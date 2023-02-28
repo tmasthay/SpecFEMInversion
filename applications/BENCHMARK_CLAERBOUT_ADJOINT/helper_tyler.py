@@ -350,6 +350,17 @@ if( __name__ == "__main__" ):
         xs = float(sys.argv[2])
         zs = float(sys.argv[3])
         ht.update_source(xs,zs)
+    elif( mode == 6 ):
+        perturb_percent = float(sys.argv[2])
+        sp = ht.src_pull()
+        xs = sp['xs'][0]
+        zs = sp['zs'][0]
+        pxs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
+        pzs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
+        xs = (1.0 + pxs) * xs
+        zs = (1.0 + pzs) * zs
+        ht.update_source(xs,zs)
+
 
 
 
