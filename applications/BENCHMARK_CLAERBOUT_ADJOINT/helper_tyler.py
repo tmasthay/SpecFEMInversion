@@ -10,7 +10,6 @@ from glob import *
 import os
 from helper_functions import *
 from scipy.interpolate import RectBivariateSpline as RBS
-from adj_seismogram import adj_seismogram
 
 class ht:
     class MathTextSciFormatter(mticker.Formatter):
