@@ -183,7 +183,7 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
                 # saves as adjoint source
                 adj = adj_new.copy()
     elif( mode.lower() == 'w2' ):
-        restrict = 0.01
+        restrict = 0.0
         nt = int(co('cat DATA/Par_file | grep "NSTEP"', shell=True) \
             .decode('utf-8').split('=')[-1])
         i1,i2 = cut(nt, restrict)
