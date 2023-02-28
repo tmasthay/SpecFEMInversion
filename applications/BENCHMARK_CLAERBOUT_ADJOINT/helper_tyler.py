@@ -153,8 +153,8 @@ class ht:
     def update_source(xs, zs, filename='DATA/SOURCE'):
         s = ht.read_close(filename)
         t = 28 * ' '
-        s = re.sub('xs.*=.*', 'xs%s= %.1f'%(t,xs), s)
-        s = re.sub('zs.*=.*', 'zs%s= %.1f'%(t,zs), s)
+        s = re.sub('xs.*=.*', 'xs%s= %.8f'%(t,xs), s)
+        s = re.sub('zs.*=.*', 'zs%s= %.8f'%(t,zs), s)
         ht.write_close(s,filename)
 
     def gd_adjoint(filename, n=3, dx=1.0, dz=1.0, kx=3, ky=3):
@@ -357,8 +357,11 @@ if( __name__ == "__main__" ):
         zs = sp['zs'][0]
         pxs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
         pzs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
+        u = xs
+        v = zs
         xs = (1.0 + pxs) * xs
         zs = (1.0 + pzs) * zs
+        print('(%f, %f) -> (%f, %f)'%(u,v,xs,zs), file=sys.stderr)
         ht.update_source(xs,zs)
 
 

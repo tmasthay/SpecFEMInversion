@@ -15,12 +15,11 @@ def cut(n,restrict):
         return 0,n
     if( type(restrict) == float or len(restrict) == 1 ):
         restrict = [restrict, 1.0 - restrict]
-    if( restrict == 0.0 ):
-        return 0,n
     p,q = restrict
     assert( p <= q and p <= 1.0 and q <= 1.0 )
     i1 = int(p * n)
     i2 = int(q * n) + 1
+    if( i2 > n ): i2 = n
     return i1,i2
 
 def cumulative(u, prepend_zero=False):
