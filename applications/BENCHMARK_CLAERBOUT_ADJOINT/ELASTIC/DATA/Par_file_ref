@@ -172,7 +172,7 @@ use_existing_STATIONS           = .false.
 
 # number of receiver sets (i.e. number of receiver lines to create below)
 # NOTE: nreceiversets should be +1 if you are using artificial receivers!!!
-nreceiversets                   = 5
+nreceiversets                   = 2
 
 # orientation
 anglerec                        = 0.d0           # angle to rotate components at receivers
