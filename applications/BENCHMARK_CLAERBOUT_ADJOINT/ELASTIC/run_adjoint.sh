@@ -168,6 +168,7 @@ then
   ./kernel_evaluation_postprocessing.py $NSTEP $DT $NPROC $SIM_TYPE
 fi
 
+echo "Moving Par_file to Par_file_inter"
 cp DATA/Par_file DATA/Par_file_inter
 
 ########################### final forward ################################

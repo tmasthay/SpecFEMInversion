@@ -197,29 +197,28 @@ record_at_surface_same_vertical = .true.        # receivers inside the medium or
 # ARTIFICIAL RECEIVERS START
 # ARTIFICIAL RECEIVER GROUP 1
 nrec                            = 3
-xdeb                            = 99.0
-zdeb                            = 399.0
-xfin                            = 101.0
-zfin                            = 399.0
+xdeb                            = 499.0
+zdeb                            = 499.0
+xfin                            = 501.0
+zfin                            = 499.0
 record_at_surface_same_vertical = .false.
 
 # ARTIFICIAL RECEIVER GROUP 2
 nrec                            = 3
-xdeb                            = 99.0
-zdeb                            = 400.0
-xfin                            = 101.0
-zfin                            = 400.0
+xdeb                            = 499.0
+zdeb                            = 500.0
+xfin                            = 501.0
+zfin                            = 500.0
 record_at_surface_same_vertical = .false.
 
 # ARTIFICIAL RECEIVER GROUP 3
 nrec                            = 3
-xdeb                            = 99.0
-zdeb                            = 401.0
-xfin                            = 101.0
-zfin                            = 401.0
+xdeb                            = 499.0
+zdeb                            = 501.0
+xfin                            = 501.0
+zfin                            = 501.0
 record_at_surface_same_vertical = .false.
 
- 
 # ARTIFICIAL RECEIVERS END
 
 #-----------------------------------------------------------

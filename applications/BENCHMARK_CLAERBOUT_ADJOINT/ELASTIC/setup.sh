@@ -179,13 +179,13 @@ echo
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi
 
-# replaces model files with perturbed ones
-for (( iproc = 0; iproc < $NPROC; iproc++ )); do
-  rank=`printf "%06i\n" $iproc`
-  cp -v DATA/proc${rank}_rho_gaussian.bin DATA/proc${rank}_rho.bin
-  cp -v DATA/proc${rank}_vp_gaussian.bin DATA/proc${rank}_vp.bin
-  cp -v DATA/proc${rank}_vs_gaussian.bin DATA/proc${rank}_vs.bin
-  if [[ $? -ne 0 ]]; then exit 1; fi
-done
+# # replaces model files with perturbed ones
+# for (( iproc = 0; iproc < $NPROC; iproc++ )); do
+#   rank=`printf "%06i\n" $iproc`
+#   cp -v DATA/proc${rank}_rho_gaussian.bin DATA/proc${rank}_rho.bin
+#   cp -v DATA/proc${rank}_vp_gaussian.bin DATA/proc${rank}_vp.bin
+#   cp -v DATA/proc${rank}_vs_gaussian.bin DATA/proc${rank}_vs.bin
+#   if [[ $? -ne 0 ]]; then exit 1; fi
+# done
 
 cp DATA/Par_file DATA/Par_file_inter
