@@ -16,7 +16,6 @@ from wasserstein import *
 from subprocess import check_output as co
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
-from helper_tyler import *
 
 #########################################
 
@@ -25,6 +24,29 @@ from helper_tyler import *
 use_derivative_of_pressure = True
 
 #########################################
+
+class ah:
+    class MathTextSciFormatter(mticker.Formatter):
+        def __init__(self, fmt="%1.2e"):
+            self.fmt = fmt
+        def __call__(self, x, pos=None):
+            s = self.fmt % x
+            decimal_point = '.'
+            positive_sign = '+'
+            tup = s.split('e')
+            significand = tup[0].rstrip(decimal_point)
+            sign = tup[1][0].replace(positive_sign, '')
+            exponent = tup[1][1:].lstrip('0')
+            if exponent:
+                exponent = '10^{%s%s}' % (sign, exponent)
+            if significand and exponent:
+                s =  r'%s{\times}%s' % (significand, exponent)
+            else:
+                s =  r'%s%s' % (significand, exponent)
+            return "${}$".format(s)
+
+    def sn_plot(local_ax=plt, num_decimals=1):
+        local_ax.gca().yaxis.set_major_formatter(ah.MathTextSciFormatter('%' + '1.%de'%num_decimals))
 
 
 def adj_seismogram_get_files(NSTEP,DT,NPROC,SIM_TYPE):
@@ -212,7 +234,7 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
                     # formatter = ScalarFormatter(useMathText=True)
                     # formatter.set_scientific(True)
                     # plt.gca().yaxis.set_major_formatter(formatter)
-                    ht.sn_plot()
+                    ah.sn_plot()
                     plt.legend(fontsize=8)
 
                     plt.subplot(2,2,2)
@@ -223,12 +245,12 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
 
                     plt.subplot(2,2,3)
                     plt.plot(t,adj[i],linestyle='-',label='W2 adjoint')
-                    ht.sn_plot()
+                    ah.sn_plot()
                     plt.title(r'$W_2$ Adjoint for trace %d'%i)
 
                     plt.subplot(2,2,4)
                     plt.plot(t,syn[i][i1:i2] - dat[i][i1:i2], linestyle='-', linewidth=0.5, label='L2 adjoint')
-                    ht.sn_plot()
+                    ah.sn_plot()
                     plt.title('$L_2$ Adjoint for trace %d'%i)
                     plt.savefig('OUTPUT_FILES/adjoint_%d.pdf'%i)
                     plt.clf()
