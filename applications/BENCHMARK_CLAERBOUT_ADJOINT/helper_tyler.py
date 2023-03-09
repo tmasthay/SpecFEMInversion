@@ -101,7 +101,24 @@ class ht:
             curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
-    def add_artificial_receivers(src, og_recs, N=5, filename='DATA/Par_file', dz=1.0, dx=1.0, delete=False):
+    def update_field(field_name, value, filename):
+        s = ht.read_close(filename)
+        t = 28 * ' '
+        if( type(value) == int ):
+            s = re.sub('%s.*=.*'%field_name, '%s%s= %d'%(field_name, t, value), s)
+        elif( type(value) == float ):
+            s = re.sub('%s.*=.*'%field_name, '%s%s= %.8f'%(field_name, t, value), s)
+        else:
+            s = re.sub('%s.*=.*'%field_name, '%s%s= %s'%(field_name, t, value), s)
+        ht.write_close(s, filename)
+
+    def update_source(xs, zs, filename='DATA/SOURCE'):
+        ht.update_field('xs', xs, filename)
+        ht.update_field('zs', zs, filename)
+
+    def add_artificial_receivers(src, og_recs, N=5, filename='DATA/Par_file', dz=1.0, dx=1.0):
+        ht.update_field('nreceiversets', og_recs + N, filename)
+
         s = ht.read_close(filename)
         start_tag = '# ARTIFICIAL RECEIVERS START'
         end_tag = '# ARTIFICIAL RECEIVERS END'
@@ -124,23 +141,8 @@ class ht:
         text = text.replace(start_tag, start_tag + '\n' + s)
         print(re.findall(r'%s'%start_tag, text))
         ht.write_close(text, filename)
-    
-    def update_field(field_name, value, filename):
-        s = ht.read_close(filename)
-        t = 28 * ' '
-        if( type(value) == int ):
-            s = re.sub('%s.*=.*'%field_name, '%s%s= %d'%(field_name, t, value), s)
-        elif( type(value) == float ):
-            s = re.sub('%s.*=.*'%field_name, '%s%s= %.8f'%(field_name, t, value), s)
-        else:
-            s = re.sub('%s.*=.*'%field_name, '%s%s= %s'%(field_name, t, value), s)
-        ht.write_close(s, filename)
 
-    def update_source(xs, zs, filename='DATA/SOURCE'):
-        ht.update_field('xs', xs, filename)
-        ht.update_field('zs', zs, filename)
-
-    def gd_adjoint(filename, n=3, dx=1.0, dz=1.0, kx=3, ky=3):
+    def gd_adjoint(filename, n=5, dx=1.0, dz=1.0, kx=3, ky=3):
         hf = helper()
         f1 = hf.read_SU_file(filename[0])
         f2 = hf.read_SU_file(filename[1])
@@ -184,7 +186,7 @@ class ht:
         tmp2 = np.exp(-np.pi**2 * f**2 * t**2)
         np.save(filename, tmp1*tmp2)
 
-    def src_grad(filenames, sd, dt, n=3, dx=1.0, dz=1.0, 
+    def src_grad(filenames, sd, dt, n=5, dx=1.0, dz=1.0, 
         ricker_file='OUTPUT_FILES/ricker.npy',
         output_file='OUTPUT_FILES/src_grad.npy'):
         s = ht.gd_adjoint(filenames, n, dx, dz)
@@ -312,12 +314,9 @@ if( __name__ == "__main__" ):
         plt.title('Frequency comparison')
         plt.savefig('freq.pdf')
     elif( mode == 2 ):
-        delete = False
-        if( len(sys.argv) == 3 ):
-            delete = sys.argv[2].lower()[0] == 't'
         v = ht.src_pull()
         src = [v['xs'][0], v['zs'][0]]
-        ht.add_artificial_receivers(src, delete=delete)
+        ht.add_artificial_receivers(src)
     elif( mode == 4 ):
         pp = ht.par_pull()
         sp = ht.src_pull()
@@ -348,8 +347,23 @@ if( __name__ == "__main__" ):
         zs = (1.0 + pzs) * zs
         print('(%f, %f) -> (%f, %f)'%(u,v,xs,zs), file=sys.stderr)
         ht.update_source(xs,zs)
-        ht.add_artificial_receivers([xs,zs], filename='DATA/Par_file', delete=True)
         ht.add_artificial_receivers([xs,zs], filename='DATA/Par_file')
+    elif( mode == 7 ):
+        nt = par_og['NSTEP'][0]
+        dt = par_og['DT'][0]
+        freq = src_og['f0'][0]
+        ht.make_ricker(nt,dt,freq)
+
+
+        filenames = ['OUTPUT_FILES.syn.adjoint/Ux_file_single_d.su', 
+            'OUTPUT_FILES.syn.adjoint/Uz_file_single_d.su']
+        src_curr = ht.src_pull()
+        recs = 5
+        g = ht.src_grad(filenames, src_curr, dt, n=recs)
+        src_curr['nreceiversets'] = recs + src_og['nreceiversets']
+        ht.backtrack_and_update(g, src_curr, misfit_type=sys.argv[2].lower(), 
+            c_armij=0.0001, alpha0=2.0)
+
 
 
 

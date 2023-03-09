@@ -147,29 +147,29 @@ update_percent=$(cat setup.sh | grep "perturb_percent=" | sed 's/perturb_percent
 
 
 #./helper_tyler.py 3
-./helper_tyler.py 2 True
-./helper_tyler.py 2
 
-# checks exit code
-if [[ $? -ne 0 ]]; then exit 1; fi
+# # checks exit code
+# if [[ $? -ne 0 ]]; then exit 1; fi
 
-# replaces model files with perturbed ones
-for (( iproc = 0; iproc < $NPROC; iproc++ )); do
-  rank=`printf "%06i\n" $iproc`
-  cp -v DATA/proc${rank}_rho_new.bin DATA/proc${rank}_rho.bin
-  cp -v DATA/proc${rank}_vp_new.bin DATA/proc${rank}_vp.bin
-  cp -v DATA/proc${rank}_vs_new.bin DATA/proc${rank}_vs.bin
-  if [[ $? -ne 0 ]]; then exit 1; fi
-done
+# # replaces model files with perturbed ones
+# for (( iproc = 0; iproc < $NPROC; iproc++ )); do
+#   rank=`printf "%06i\n" $iproc`
+#   cp -v DATA/proc${rank}_rho_new.bin DATA/proc${rank}_rho.bin
+#   cp -v DATA/proc${rank}_vp_new.bin DATA/proc${rank}_vp.bin
+#   cp -v DATA/proc${rank}_vs_new.bin DATA/proc${rank}_vs.bin
+#   if [[ $? -ne 0 ]]; then exit 1; fi
+# done
 
-########################### postprocessing ################################
-if [[ $(($iter_no > 1)) ]]
-then
-  ./kernel_evaluation_postprocessing.py $NSTEP $DT $NPROC $SIM_TYPE
-fi
+# ########################### postprocessing ################################
+# if [[ $(($iter_no > 1)) ]]
+# then
+#   ./kernel_evaluation_postprocessing.py $NSTEP $DT $NPROC $SIM_TYPE
+# fi
 
-echo "Moving Par_file to Par_file_inter"
-cp DATA/Par_file DATA/Par_file_inter
+# echo "Moving Par_file to Par_file_inter"
+# cp DATA/Par_file DATA/Par_file_inter
+
+./helper_tyler.py 7 $2
 
 ########################### final forward ################################
 
