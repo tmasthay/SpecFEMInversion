@@ -63,7 +63,8 @@ class ht:
             'xdeb': float,
             'xfin': float,
             'zdeb': float,
-            'zfin': float
+            'zfin': float,
+            'nreceiversets': int
         }
         return ht.get_params(filename, par_map)
 
@@ -100,41 +101,44 @@ class ht:
             curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
-    def add_artificial_receivers(src, N=5, filename='DATA/Par_file', dz=1.0, dx=1.0, delete=False):
-        if( not delete ):
-            sp = lambda a,b: '%s%s= %s\n'%(a,28 * ' ',b)
-            s = ''
-            n = int(N/2)
-            for i in range(-n,n+1):
-                s += '# ARTIFICIAL RECEIVER GROUP %d\n'%(i+2)
-                s += sp('nrec', str(N))
-                s += sp('xdeb', '%.1f'%(src[0]-dx))
-                s += sp('zdeb', '%.1f'%(src[1]+i*dz))
-                s += sp('xfin', '%.1f'%(src[0]+dx))
-                s += sp('zfin', '%.1f'%(src[1]+i*dz))
-                s += 'record_at_surface_same_vertical = .false.\n\n'
-            start_tag = '# ARTIFICIAL RECEIVERS START'
-            f = open(filename, 'r')
-            text = f.read()
-            f.close()
-            text = text.replace(start_tag, start_tag + '\n' + s)
-            print(re.findall(r'%s'%start_tag, text))
-            f = open(filename, 'w')
-            f.write(text)
-        else:
-            s = ht.read_close(filename)
-            start_tag = '# ARTIFICIAL RECEIVERS START'
-            end_tag = '# ARTIFICIAL RECEIVERS END'
-            inner_text = s.split(start_tag)[-1].split(end_tag)[0]
-            s = s.replace(inner_text, '')
-            ht.write_close(s, filename)
+    def add_artificial_receivers(src, og_recs, N=5, filename='DATA/Par_file', dz=1.0, dx=1.0, delete=False):
+        s = ht.read_close(filename)
+        start_tag = '# ARTIFICIAL RECEIVERS START'
+        end_tag = '# ARTIFICIAL RECEIVERS END'
+        inner_text = s.split(start_tag)[-1].split(end_tag)[0]
+        s = s.replace(inner_text, '')
+        ht.write_close(s, filename)
+
+        sp = lambda a,b: '%s%s= %s\n'%(a,28 * ' ',b)
+        s = ''
+        n = int(N/2)
+        for i in range(-n,n+1):
+            s += '# ARTIFICIAL RECEIVER GROUP %d\n'%(i+2)
+            s += sp('nrec', str(N))
+            s += sp('xdeb', '%.1f'%(src[0]-dx))
+            s += sp('zdeb', '%.1f'%(src[1]+i*dz))
+            s += sp('xfin', '%.1f'%(src[0]+dx))
+            s += sp('zfin', '%.1f'%(src[1]+i*dz))
+            s += 'record_at_surface_same_vertical = .false.\n\n'
+        text = ht.read_close(filename)
+        text = text.replace(start_tag, start_tag + '\n' + s)
+        print(re.findall(r'%s'%start_tag, text))
+        ht.write_close(text, filename)
     
-    def update_source(xs, zs, filename='DATA/SOURCE'):
+    def update_field(field_name, value, filename):
         s = ht.read_close(filename)
         t = 28 * ' '
-        s = re.sub('xs.*=.*', 'xs%s= %.8f'%(t,xs), s)
-        s = re.sub('zs.*=.*', 'zs%s= %.8f'%(t,zs), s)
-        ht.write_close(s,filename)
+        if( type(value) == int ):
+            s = re.sub('%s.*=.*'%field_name, '%s%s= %d'%(field_name, t, value), s)
+        elif( type(value) == float ):
+            s = re.sub('%s.*=.*'%field_name, '%s%s= %.8f'%(field_name, t, value), s)
+        else:
+            s = re.sub('%s.*=.*'%field_name, '%s%s= %s'%(field_name, t, value), s)
+        ht.write_close(s, filename)
+
+    def update_source(xs, zs, filename='DATA/SOURCE'):
+        ht.update_field('xs', xs, filename)
+        ht.update_field('zs', zs, filename)
 
     def gd_adjoint(filename, n=3, dx=1.0, dz=1.0, kx=3, ky=3):
         hf = helper()
@@ -283,9 +287,11 @@ class ht:
         os.system('mv %s %s'%(out_dir, final_dir))
         return xs,zs,alpha
             
-
 if( __name__ == "__main__" ):
     mode = int(sys.argv[1])
+    src_og = ht.src_pull()
+    par_og = ht.par_pull()
+
     if( mode == 1 ):
         ht.create_ricker_time_derivative('ELASTIC/DATA')
         par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
