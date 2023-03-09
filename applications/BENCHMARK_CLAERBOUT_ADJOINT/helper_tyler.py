@@ -100,12 +100,12 @@ class ht:
             curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
-    def add_artificial_receivers(src, filename='DATA/Par_file', dz=1.0, dx=1.0, delete=False):
+    def add_artificial_receivers(src, N=5, filename='DATA/Par_file', dz=1.0, dx=1.0, delete=False):
         if( not delete ):
             sp = lambda a,b: '%s%s= %s\n'%(a,28 * ' ',b)
-            N = 3
             s = ''
-            for i in range(-1,N-1):
+            n = int(N/2)
+            for i in range(-n,n+1):
                 s += '# ARTIFICIAL RECEIVER GROUP %d\n'%(i+2)
                 s += sp('nrec', str(N))
                 s += sp('xdeb', '%.1f'%(src[0]-dx))
