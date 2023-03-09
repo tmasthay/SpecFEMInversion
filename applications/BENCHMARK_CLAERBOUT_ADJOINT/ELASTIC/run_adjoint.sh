@@ -168,6 +168,8 @@ then
   ./kernel_evaluation_postprocessing.py $NSTEP $DT $NPROC $SIM_TYPE
 fi
 
+cp DATA/Par_file DATA/Par_file_inter
+
 ########################### final forward ################################
 
 # ## forward simulation

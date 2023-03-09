@@ -363,6 +363,8 @@ if( __name__ == "__main__" ):
         zs = (1.0 + pzs) * zs
         print('(%f, %f) -> (%f, %f)'%(u,v,xs,zs), file=sys.stderr)
         ht.update_source(xs,zs)
+        ht.add_artificial_receivers([xs,zs], filename='DATA/Par_file', delete=True)
+        ht.add_artificial_receivers([xs,zs], filename='DATA/Par_file')
 
 
 
