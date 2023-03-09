@@ -15,7 +15,7 @@ from helper_functions import helper
 from wasserstein import *
 from subprocess import check_output as co
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
+import matplotlib.ticker as mticker
 
 #########################################
 

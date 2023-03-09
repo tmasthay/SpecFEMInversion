@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import numpy as np
-import matplotlib.ticker as mticker
 import matplotlib.pyplot as plt
 from subprocess import check_output as co
 import sys
