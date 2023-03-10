@@ -199,7 +199,7 @@ class ht:
     def run_simulator(mode, **kw):
         output_name = kw.get('output_name', 'OUTPUT_FILES.syn.adjoint')
         s = ''
-        if( mode.lower() == 'f' ):
+        if( mode.lower()[0] == 'f' ):
             if( 'output_name' not in kw.keys() ):
                 output_name = 'OUTPUT_FIILES.syn.forward'
             s = '''
@@ -209,7 +209,7 @@ class ht:
                 ./change_simulation_type.pl -f
 
                 # saving model files
-                sed -i '' "s/^SAVE_MODEL .*=.*/SAVE_MODEL = gll/" DATA/Par_file
+                #sed -i '' "s/^SAVE_MODEL .*=.*/SAVE_MODEL = gll/" DATA/Par_file
 
                 ./run_this_example.sh > output.log
 
@@ -225,7 +225,7 @@ class ht:
 
                 cp -v OUTPUT_FILES/*.su SEM/dat/
             '''%(output_name, output_name)
-        elif( mode.lower() == 'a' ):
+        elif( mode.lower()[0] == 'a' ):
             kernel = kw.get('kernel', 'KERNELS')
             kernel = kernel.replace('/', '')
             s = '''
@@ -249,15 +249,17 @@ class ht:
             '''%(output_name, output_name, kernel, kernel)
         else:
             raise ValueError('Must be adjoint or forward mode')
+        print('%s\nSIMULATOR CALLED\n%s'%(80*'*',80*'*'), file=sys.stderr)
+        os.system(s)
 
     def backtrack_and_update(g, src_param, misfit_type='l2', 
-        c_armijo=0.0001, alpha0=2.0, 
+        c_armijo=0.01, alpha0=2.0, max_backtrack=25, 
         src_file='DATA/SOURCE', data_dir='OUTPUT_FILES.dat.forward', 
         out_dir='OUTPUT_FILES.syn.backtrack', final_dir='OUTPUT_FILES.syn.forward'):
 
         xs_orig = src_param['xs'][0]
         zs_orig = src_param['zs'][0]
-        phi_prime0 = np.linalg.norm(g)**2
+        phi_prime0 = -np.linalg.norm(g)**2
         alpha = alpha0
         misfitx = [float(e) for e in \
             ht.read_close('misfitx.log').split('\n') if e != ''][-1]
@@ -265,9 +267,12 @@ class ht:
             ht.read_close('misfitz.log').split('\n') if e != ''][-1]
         ref_misfit = misfitx + misfitz
         misfit = np.inf
-        while( misfit > ref_misfit + c_armijo * alpha * phi_prime0 ):
+        stars = 80 * '*'
+        armijo_threshold = lambda val: ref_misfit + c_armijo * alpha * phi_prime0
+        curr = 0
+        while( misfit > armijo_threshold(alpha) or curr > max_backtrack):
             alpha = alpha / 2.0
-            print('Backtrack for alpha=%.2e'%alpha)
+            print(stars)
             xs = xs_orig + alpha * g[0]
             zs = zs_orig + alpha * g[1]
             ht.update_source(xs,zs,src_file)
@@ -280,88 +285,99 @@ class ht:
                 '%s/Uz_file_single_d.su'%data_dir,
                 misfit_type,
                 '%s/misfitz.log'%out_dir)
-            ref_misfit = ht.get_last('%s/misfitx.log'%out_dir) \
+            misfit = ht.get_last('%s/misfitx.log'%out_dir) \
                 + ht.get_last('%s/misfitz.log'%out_dir)
+            print('(curr, g, proposed) = (%s,%s,%s)'%([xs_orig,zs_orig],g,[xs,zs]), file=sys.stderr)
+            print('(alpha, misfit, threshold) = (%.8e, %.8e, %.8e)'%(alpha, 
+                misfit, armijo_threshold(alpha)), file=sys.stderr)
+            curr += 1
         print('Successfully backtracked! alpha=%.2e'%(alpha))
         print('Moving backtrack directory "%s" to "%s"'%(out_dir, final_dir))
         os.system('rm -rf %s'%final_dir)
         os.system('mv %s %s'%(out_dir, final_dir))
+        ht.append_close('%.8f'%ht.get_last('%s/misfitx.log'%out_dir), 'misfitx.log')
+        ht.append_close('%.8f'%ht.get_last('%s/misfitz.log'%out_dir), 'misfitz.log')
         return xs,zs,alpha
             
 if( __name__ == "__main__" ):
-    mode = int(sys.argv[1])
-    src_og = ht.src_pull()
-    par_og = ht.par_pull()
+    try:
+        mode = int(sys.argv[1])
+        src_og = ht.src_pull()
+        par_og = ht.par_pull()
 
-    if( mode == 1 ):
-        ht.create_ricker_time_derivative('ELASTIC/DATA')
-        par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
-        nt = par_fields['NSTEP'][0]
-        dt = par_fields['DT'][0]
-        t = np.linspace(0.0, dt * (nt-1), nt)
+        if( mode == 1 ):
+            ht.create_ricker_time_derivative('ELASTIC/DATA')
+            par_fields = ht.par_pull('ELASTIC/DATA/Par_file_ref')
+            nt = par_fields['NSTEP'][0]
+            dt = par_fields['DT'][0]
+            t = np.linspace(0.0, dt * (nt-1), nt)
 
-        source_params = ht.src_pull('ELASTIC/DATA/SOURCE')
-        freq = source_params['f0']
+            source_params = ht.src_pull('ELASTIC/DATA/SOURCE')
+            freq = source_params['f0']
 
-        v = [np.load(e) for e in glob('ELASTIC/DATA/ricker_time_deriv_[0-9]*.bin*')]
+            v = [np.load(e) for e in glob('ELASTIC/DATA/ricker_time_deriv_[0-9]*.bin*')]
 
-        for (i,e) in enumerate(v):
-            plt.plot(t, e, label='%.1f'%freq[i])
-            plt.savefig('%d.pdf'%i)
+            for (i,e) in enumerate(v):
+                plt.plot(t, e, label='%.1f'%freq[i])
+                plt.savefig('%d.pdf'%i)
 
-        plt.legend()
-        plt.title('Frequency comparison')
-        plt.savefig('freq.pdf')
-    elif( mode == 2 ):
-        v = ht.src_pull()
-        src = [v['xs'][0], v['zs'][0]]
-        ht.add_artificial_receivers(src)
-    elif( mode == 4 ):
-        pp = ht.par_pull()
-        sp = ht.src_pull()
-        freq = sp['f0'][0]
-        xs = sp['xs'][0]
-        zs = sp['zs'][0]
-        nt = pp['NSTEP'][0]
-        dt = pp['DT'][0]
-        ht.make_ricker(nt,dt,freq)
-        bd = 'OUTPUT_FILES.syn.adjoint'
-        filenames = ['%s/Ux_file_single_d.su'%bd, '%s/Uz_file_single_d.su'%bd]
-        s = ht.src_grad(filenames, sp, dt)
-        ht.append_close(str(s), 'OUTPUT_FILES/grad.log')
-    elif( mode == 5 ):
-        xs = float(sys.argv[2])
-        zs = float(sys.argv[3])
-        ht.update_source(xs,zs)
-    elif( mode == 6 ):
-        perturb_percent = float(sys.argv[2])
-        sp = ht.src_pull()
-        xs = sp['xs'][0]
-        zs = sp['zs'][0]
-        pxs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
-        pzs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
-        u = xs
-        v = zs
-        xs = (1.0 + pxs) * xs
-        zs = (1.0 + pzs) * zs
-        print('(%f, %f) -> (%f, %f)'%(u,v,xs,zs), file=sys.stderr)
-        ht.update_source(xs,zs)
-        ht.add_artificial_receivers([xs,zs], filename='DATA/Par_file')
-    elif( mode == 7 ):
-        nt = par_og['NSTEP'][0]
-        dt = par_og['DT'][0]
-        freq = src_og['f0'][0]
-        ht.make_ricker(nt,dt,freq)
+            plt.legend()
+            plt.title('Frequency comparison')
+            plt.savefig('freq.pdf')
+        elif( mode == 2 ):
+            v = ht.src_pull()
+            src = [v['xs'][0], v['zs'][0]]
+            ht.add_artificial_receivers(src, par_og['nreceiversets'][0])
+        elif( mode == 4 ):
+            pp = ht.par_pull()
+            sp = ht.src_pull()
+            freq = sp['f0'][0]
+            xs = sp['xs'][0]
+            zs = sp['zs'][0]
+            nt = pp['NSTEP'][0]
+            dt = pp['DT'][0]
+            ht.make_ricker(nt,dt,freq)
+            bd = 'OUTPUT_FILES.syn.adjoint'
+            filenames = ['%s/Ux_file_single_d.su'%bd, '%s/Uz_file_single_d.su'%bd]
+            s = ht.src_grad(filenames, sp, dt)
+            ht.append_close(str(s), 'OUTPUT_FILES/grad.log')
+        elif( mode == 5 ):
+            xs = float(sys.argv[2])
+            zs = float(sys.argv[3])
+            ht.update_source(xs,zs)
+        elif( mode == 6 ):
+            perturb_percent = float(sys.argv[2])
+            sp = ht.src_pull()
+            xs = sp['xs'][0]
+            zs = sp['zs'][0]
+            pxs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
+            pzs = 2.0 * (np.random.random() - 0.5) * perturb_percent / 100.0
+            u = xs
+            v = zs
+            xs = (1.0 + pxs) * xs
+            zs = (1.0 + pzs) * zs
+            print('(%f, %f) -> (%f, %f)'%(u,v,xs,zs), file=sys.stderr)
+            ht.update_source(xs,zs)
+            ht.add_artificial_receivers([xs,zs], par_og['nreceiversets'][0], filename='DATA/Par_file')
+        elif( mode == 7 ):
+            print('\n\n\n%s\nBEGINNING BACKTRACK\n%s\n\n\n'%(80*'*',80*'*'), file=sys.stderr)
+            os.system('sleep 3')
+            print('...')
+            nt = par_og['NSTEP'][0]
+            dt = par_og['DT'][0]
+            freq = src_og['f0'][0]
+            ht.make_ricker(nt,dt,freq)
 
-
-        filenames = ['OUTPUT_FILES.syn.adjoint/Ux_file_single_d.su', 
-            'OUTPUT_FILES.syn.adjoint/Uz_file_single_d.su']
-        src_curr = ht.src_pull()
-        recs = 5
-        g = ht.src_grad(filenames, src_curr, dt, n=recs)
-        src_curr['nreceiversets'] = recs + src_og['nreceiversets']
-        ht.backtrack_and_update(g, src_curr, misfit_type=sys.argv[2].lower(), 
-            c_armij=0.0001, alpha0=2.0)
+            filenames = ['SEM/Ux_file_single.su.adj', 
+                'SEM/Uz_file_single.su.adj']
+            src_curr = ht.src_pull()
+            recs = 5
+            g = ht.src_grad(filenames, src_curr, dt, n=recs)
+            src_curr['nreceiversets'] = recs + par_og['nreceiversets'][0]
+            ht.backtrack_and_update(g, src_curr, misfit_type=sys.argv[2].lower(), 
+                c_armijo=0.0001, alpha0=2.0)
+    except:
+        exit(-1)
 
 
 

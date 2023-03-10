@@ -130,6 +130,10 @@ cp -rp OUTPUT_FILES OUTPUT_FILES.syn.adjoint
 cp -vp OUTPUT_FILES/output.kernel.log KERNELS/
 cp -vp OUTPUT_FILES/*_kernel.* KERNELS/
 
+./helper_tyler.py 7 $2
+
+if [[ $? -ne 0 ]]; then exit 1; fi
+
 ########################### model update ################################
 
 echo
@@ -137,8 +141,8 @@ echo "model update"
 echo
 
 # takes absolute value of percent
-update_percent=$(cat setup.sh | grep "perturb_percent=" | sed 's/perturb_percent=//' | sed 's/-//')
-./helper_tyler.py 6 $update_percent
+# update_percent=$(cat setup.sh | grep "perturb_percent=" | sed 's/perturb_percent=//' | sed 's/-//')
+# ./helper_tyler.py 6 $update_percent
 
 # echo "> ./model_update.py $NPROC $SIM_TYPE $update_percent"
 # echo

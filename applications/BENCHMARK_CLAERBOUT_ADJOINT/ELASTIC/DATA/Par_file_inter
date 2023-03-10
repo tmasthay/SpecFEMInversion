@@ -172,7 +172,7 @@ use_existing_STATIONS           = .false.
 
 # number of receiver sets (i.e. number of receiver lines to create below)
 # NOTE: nreceiversets should be +1 if you are using artificial receivers!!!
-nreceiversets                   = 5
+nreceiversets                            = 7
 
 # orientation
 anglerec                        = 0.d0           # angle to rotate components at receivers
@@ -195,28 +195,44 @@ zfin                            = 10.             # last receiver z in meters (i
 record_at_surface_same_vertical = .true.        # receivers inside the medium or at the surface (z values are ignored if this is set to true, they are replaced with the topography height)
 
 # ARTIFICIAL RECEIVERS START
+# ARTIFICIAL RECEIVER GROUP 0
+nrec                            = 5
+xdeb                            = 460.8
+zdeb                            = 505.9
+xfin                            = 462.8
+zfin                            = 505.9
+record_at_surface_same_vertical = .false.
+
 # ARTIFICIAL RECEIVER GROUP 1
-nrec                            = 3
-xdeb                            = 499.0
-zdeb                            = 499.0
-xfin                            = 501.0
-zfin                            = 499.0
+nrec                            = 5
+xdeb                            = 460.8
+zdeb                            = 506.9
+xfin                            = 462.8
+zfin                            = 506.9
 record_at_surface_same_vertical = .false.
 
 # ARTIFICIAL RECEIVER GROUP 2
-nrec                            = 3
-xdeb                            = 499.0
-zdeb                            = 500.0
-xfin                            = 501.0
-zfin                            = 500.0
+nrec                            = 5
+xdeb                            = 460.8
+zdeb                            = 507.9
+xfin                            = 462.8
+zfin                            = 507.9
 record_at_surface_same_vertical = .false.
 
 # ARTIFICIAL RECEIVER GROUP 3
-nrec                            = 3
-xdeb                            = 499.0
-zdeb                            = 501.0
-xfin                            = 501.0
-zfin                            = 501.0
+nrec                            = 5
+xdeb                            = 460.8
+zdeb                            = 508.9
+xfin                            = 462.8
+zfin                            = 508.9
+record_at_surface_same_vertical = .false.
+
+# ARTIFICIAL RECEIVER GROUP 4
+nrec                            = 5
+xdeb                            = 460.8
+zdeb                            = 509.9
+xfin                            = 462.8
+zfin                            = 509.9
 record_at_surface_same_vertical = .false.
 
 # ARTIFICIAL RECEIVERS END
