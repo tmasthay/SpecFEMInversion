@@ -10,6 +10,7 @@ import os
 from helper_functions import *
 from scipy.interpolate import RectBivariateSpline as RBS
 from adj_seismogram import adj_seismogram
+from itertools import product
 
 class ht:
     def sco(s, split_output=False):
@@ -368,14 +369,48 @@ if( __name__ == "__main__" ):
             freq = src_og['f0'][0]
             ht.make_ricker(nt,dt,freq)
 
-            filenames = ['SEM/Ux_file_single.su.adj', 
-                'SEM/Uz_file_single.su.adj']
+            # filenames = ['SEM/Ux_file_single.su.adj', 
+            #     'SEM/Uz_file_single.su.adj']
+            filenames = ['OUTPUT_FILES.syn.adjoint/Ux_file_single_d.su',
+                'OUTPUT_FILES.syn.adjoint/Uz_file_single_d.su']
             src_curr = ht.src_pull()
             recs = 5
             g = ht.src_grad(filenames, src_curr, dt, n=recs)
             src_curr['nreceiversets'] = recs + par_og['nreceiversets'][0]
             ht.backtrack_and_update(g, src_curr, misfit_type=sys.argv[2].lower(), 
                 c_armijo=0.0001, alpha0=2.0)
+        elif( mode == 8 ):
+            N = 25
+            a = 100
+            b = 900
+            sources_x = np.linspace(a, b, N)
+            sources_z = np.linspace(a, b, N)
+            # sources = [e for e in product(sources_x,sources_z)]
+            misfits = []
+            os.system('misfit*.log')
+            ref_folder = 'convex_reference'
+            x_suffix = 'Ux_file_single_d.su'
+            z_suffix = 'Uz_file_single_d.su'
+            ref_x = '%s/%s'%(ref_folder, x_suffix)
+            ref_z = '%s/%s'%(ref_folder, z_suffix)
+
+            prefix = 'convex'
+            fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
+            get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace('x',c))
+
+            ht.update_source(500.0, 500.0)
+            ht.run_simulator('forward', output_name=ref_folder)
+
+
+            for (i,ex) in enumerate(sources_x):
+                for (j,ez) in enumerate(sources_z):
+                    folder = fldr(i,j)
+                    ht.update_source(ex, ez)
+                    ht.run_simulator('forward', output_name=folder)
+                    adj_seismogram(get_file(i,j,'x'), ref_x, mode=mode, 
+                        output='misfitx.log')
+                    adj_seismogram(get_file(i,j,'z'), ref_z, mode=mode,
+                        output='misfitz.log')
     except:
         exit(-1)
 

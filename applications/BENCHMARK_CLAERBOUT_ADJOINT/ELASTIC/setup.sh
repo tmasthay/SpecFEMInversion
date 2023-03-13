@@ -155,6 +155,7 @@ mv -v output.log OUTPUT_FILES/
 # backup copy
 rm -rf OUTPUT_FILES.dat.forward
 cp -rp OUTPUT_FILES OUTPUT_FILES.dat.forward
+cp -rp OUTPUT_FILES REFERENCE_FORWARD
 
 cp -v OUTPUT_FILES/*.su SEM/dat/
 

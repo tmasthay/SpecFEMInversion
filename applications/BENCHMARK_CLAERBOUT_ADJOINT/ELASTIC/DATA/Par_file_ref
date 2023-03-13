@@ -179,11 +179,11 @@ anglerec                        = 0.d0           # angle to rotate components at
 rec_normal_to_surface           = .false.        # base anglerec normal to surface (external mesh and curve file needed)
 
 # first receiver set (repeat these 6 lines and adjust nreceiversets accordingly)
-nrec                            = 1             # number of receivers
+nrec                            = 1000             # number of receivers
 xdeb                            = 100.           # first receiver x in meters
-zdeb                            = 10.          # first receiver z in meters
-xfin                            = 100.          # last receiver x in meters (ignored if only one receiver)
-zfin                            = 10.          # last receiver z in meters (ignored if only one receiver)
+zdeb                            = 0.          # first receiver z in meters
+xfin                            = 900.          # last receiver x in meters (ignored if only one receiver)
+zfin                            = 0.          # last receiver z in meters (ignored if only one receiver)
 record_at_surface_same_vertical = .true.         # receivers inside the medium or at the surface (z values are ignored if this is set to true, they are replaced with the topography height)
 
 # second receiver set

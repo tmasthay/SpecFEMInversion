@@ -222,7 +222,7 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
                 adj[i] = 0.0
                 dists[i] = 0.0
 
-                perform_plots = True
+                perform_plots = kw.get('perform_plots', False)
                 if( perform_plots ):
                     plt.rcParams['text.usetex'] = True
                     plt.figure(1)
