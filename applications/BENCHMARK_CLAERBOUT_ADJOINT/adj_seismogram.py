@@ -285,7 +285,7 @@ def adj_seismogram(filename_syn,filename_dat, mode='w2', output='misfitx.log', *
         # adjoint traces assumes Uy_file_single.su.adj name
         adjname = "Uy_file_single.su"
     elif name == "Uz_file_single_d.su":
-        # adjoint traces assumes Uz_file_single.su.adj name
+        # adjoint traces assumes Uz_file_single.su.adj name  
         adjname = "Uz_file_single.su"
     else:
         print("Error: trace name {} not recognized".format(name))

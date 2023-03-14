@@ -11,6 +11,8 @@ from helper_functions import *
 from scipy.interpolate import RectBivariateSpline as RBS
 from adj_seismogram import adj_seismogram
 from itertools import product
+import argparse
+import traceback
 
 class ht:
     def sco(s, split_output=False):
@@ -302,7 +304,22 @@ class ht:
             
 if( __name__ == "__main__" ):
     try:
-        mode = int(sys.argv[1])
+        parser = argparse.ArgumentParser(
+            description="Driver for source inversion")
+        
+        parser.add_argument("mode", type=int, 
+            help="mode of execution (int: 1 <= mode <= 8)")
+        parser.add_argument("--misfit", default="l2", type=str,
+            help="Misfit functional, either l2 or w2")
+        parser.add_argument("--plot", default=False, type=bool,
+            help="Perform seismogram plots")
+        parser.add_argument("--num_sources", default=10, type=int,
+            help="Convexity plot granularity")
+        args = parser.parse_args()
+
+        mode = args.mode
+        
+        print('Run case: %s'%str(args))
         src_og = ht.src_pull()
         par_og = ht.par_pull()
 
@@ -380,7 +397,7 @@ if( __name__ == "__main__" ):
             ht.backtrack_and_update(g, src_curr, misfit_type=sys.argv[2].lower(), 
                 c_armijo=0.0001, alpha0=2.0)
         elif( mode == 8 ):
-            N = 25
+            N = args.num_sources
             a = 100
             b = 900
             sources_x = np.linspace(a, b, N)
@@ -396,7 +413,8 @@ if( __name__ == "__main__" ):
 
             prefix = 'convex'
             fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
-            get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace('x',c))
+            get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace('x',
+                c))
 
             ht.update_source(500.0, 500.0)
             ht.run_simulator('forward', output_name=ref_folder)
@@ -407,11 +425,12 @@ if( __name__ == "__main__" ):
                     folder = fldr(i,j)
                     ht.update_source(ex, ez)
                     ht.run_simulator('forward', output_name=folder)
-                    adj_seismogram(get_file(i,j,'x'), ref_x, mode=mode, 
-                        output='misfitx.log')
-                    adj_seismogram(get_file(i,j,'z'), ref_z, mode=mode,
-                        output='misfitz.log')
-    except:
+                    adj_seismogram(get_file(i,j,'x'), ref_x, mode=args.misfit, 
+                        output='misfitx.log', perform_plots=args.plot)
+                    adj_seismogram(get_file(i,j,'z'), ref_z, mode=args.misfit,
+                        output='misfitz.log', perform_plots=args.plot)
+    except Exception as e:
+        traceback.print_exc()
         exit(-1)
 
 
