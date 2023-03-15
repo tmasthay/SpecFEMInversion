@@ -9,34 +9,51 @@ from glob import *
 import os
 from helper_functions import *
 from scipy.interpolate import RectBivariateSpline as RBS
-from adj_seismogram import adj_seismogram
+from adj_seismogram import eval_misfit, adj_seismogram
 from itertools import product
 import argparse
 import traceback
 
 class ht:
-    def sco(s, split_output=False):
+    def sco(
+            s, 
+            split_output=False
+            ):
         s = co(s,shell=True).decode('utf-8')
         if( split_output ):
             s = [e for e in s.split('\n') if e != '']
         return s
     
-    def read_close(filename):
+    def read_close(
+            filename
+            ):
         with open(filename, 'r') as f:
             return f.read()
     
-    def write_close(s, filename):
+    def write_close(
+            s, 
+            filename
+            ):
         with open(filename, 'w') as f:
             f.write(s)
 
-    def append_close(s, filename):
+    def append_close(
+            s, 
+            filename
+            ):
         with open(filename, 'a') as f:
             f.write(s)
 
-    def get_last(filename, conversion=float):
+    def get_last(
+            filename, 
+            conversion=float
+            ):
         return conversion(ht.sco('cat %s'%filename, True)[-1])
 
-    def get_params(filename='DATA/Par_file_ref', type_map=dict()):
+    def get_params(
+            filename='DATA/Par_file_ref', 
+            type_map=dict()
+            ):
         try:
             d = dict()
             s = [re.sub('#.*$', '', e).strip() for e in open(filename, 'r').readlines()]
@@ -55,7 +72,9 @@ class ht:
         except Exception as e:
             raise
 
-    def par_pull(filename='DATA/Par_file_ref'):
+    def par_pull(
+            filename='DATA/Par_file_ref'
+            ):
         par_map = {'NSTEP': int,
             'DT': float,
             'NSOURCES': int,
@@ -70,7 +89,9 @@ class ht:
         }
         return ht.get_params(filename, par_map)
 
-    def src_pull(filename='DATA/SOURCE'):
+    def src_pull(
+            filename='DATA/SOURCE'
+            ):
         tmp1 = lambda x: float(x.replace('d','e'))
         src_map = {'f0': float,
             'source_type': int,
@@ -84,7 +105,10 @@ class ht:
         }
         return ht.get_params(filename, src_map)
 
-    def create_ricker_time_derivative(base_dir='DATA', warn=False):
+    def create_ricker_time_derivative(
+            base_dir='DATA', 
+            warn=False
+            ):
         if( base_dir[-1] == '/' ):
             base_dir = base_dir[:-1]
 
@@ -103,7 +127,11 @@ class ht:
             curr = (tmp1 + tmp2) * tmp3
             np.save('%s/ricker_time_deriv_%d.bin'%(base_dir, i), curr)
 
-    def update_field(field_name, value, filename):
+    def update_field(
+            field_name, 
+            value, 
+            filename
+            ):
         s = ht.read_close(filename)
         t = 28 * ' '
         if( type(value) == int ):
@@ -114,11 +142,22 @@ class ht:
             s = re.sub('%s.*=.*'%field_name, '%s%s= %s'%(field_name, t, value), s)
         ht.write_close(s, filename)
 
-    def update_source(xs, zs, filename='DATA/SOURCE'):
+    def update_source(
+            xs, 
+            zs, 
+            filename='DATA/SOURCE'
+            ):
         ht.update_field('xs', xs, filename)
         ht.update_field('zs', zs, filename)
 
-    def add_artificial_receivers(src, og_recs, N=5, filename='DATA/Par_file', dz=1.0, dx=1.0):
+    def add_artificial_receivers(
+            src, 
+            og_recs, 
+            N=5, 
+            filename='DATA/Par_file', 
+            dz=1.0, 
+            dx=1.0
+            ):
         ht.update_field('nreceiversets', og_recs + N, filename)
 
         s = ht.read_close(filename)
@@ -144,7 +183,14 @@ class ht:
         print(re.findall(r'%s'%start_tag, text))
         ht.write_close(text, filename)
 
-    def gd_adjoint(filename, n=5, dx=1.0, dz=1.0, kx=3, ky=3):
+    def gd_adjoint(
+            filename, 
+            n=5, 
+            dx=1.0, 
+            dz=1.0, 
+            kx=3, 
+            ky=3
+            ):
         hf = helper()
         f1 = hf.read_SU_file(filename[0])
         f2 = hf.read_SU_file(filename[1])
@@ -182,15 +228,27 @@ class ht:
         # grad_div2 = df2_dz_dz + df1_dx_dz
         return np.array([grad_div1,grad_div2])
     
-    def make_ricker(nt, dt, f, filename='OUTPUT_FILES/ricker.npy'):
+    def make_ricker(
+            nt, 
+            dt, 
+            f, 
+            filename='OUTPUT_FILES/ricker.npy'
+            ):
         t = np.linspace(0,(nt-1)*dt, nt)
         tmp1 = (1.0 - 2 * np.pi * f**2 * t**2)
         tmp2 = np.exp(-np.pi**2 * f**2 * t**2)
         np.save(filename, tmp1*tmp2)
 
-    def src_grad(filenames, sd, dt, n=5, dx=1.0, dz=1.0, 
-        ricker_file='OUTPUT_FILES/ricker.npy',
-        output_file='OUTPUT_FILES/src_grad.npy'):
+    def src_grad(
+            filenames, 
+            sd, 
+            dt, 
+            n=5, 
+            dx=1.0, 
+            dz=1.0, 
+            ricker_file='OUTPUT_FILES/ricker.npy',
+            output_file='OUTPUT_FILES/src_grad.npy'
+            ):
         s = ht.gd_adjoint(filenames, n, dx, dz)
         M = np.array([ [sd['Mxx'][0], sd['Mxz'][0]], [sd['Mxz'][0], sd['Mzz'][0]] ])
         g = np.load(ricker_file)
@@ -199,7 +257,10 @@ class ht:
         np.save(output_file, integral)
         return integral
 
-    def run_simulator(mode, **kw):
+    def run_simulator(
+            mode, 
+            **kw
+            ):
         output_name = kw.get('output_name', 'OUTPUT_FILES.syn.adjoint')
         s = ''
         if( mode.lower()[0] == 'f' ):
@@ -255,11 +316,18 @@ class ht:
         print('%s\nSIMULATOR CALLED\n%s'%(80*'*',80*'*'), file=sys.stderr)
         os.system(s)
 
-    def backtrack_and_update(g, src_param, misfit_type='l2', 
-        c_armijo=0.01, alpha0=2.0, max_backtrack=25, 
-        src_file='DATA/SOURCE', data_dir='OUTPUT_FILES.dat.forward', 
-        out_dir='OUTPUT_FILES.syn.backtrack', final_dir='OUTPUT_FILES.syn.forward'):
-
+    def backtrack_and_update(
+            g, 
+            src_param, 
+            misfit_type='l2', 
+            c_armijo=0.01, 
+            alpha0=2.0, 
+            max_backtrack=25, 
+            src_file='DATA/SOURCE', 
+            data_dir='OUTPUT_FILES.dat.forward', 
+            out_dir='OUTPUT_FILES.syn.backtrack', 
+            final_dir='OUTPUT_FILES.syn.forward'
+            ):
         xs_orig = src_param['xs'][0]
         zs_orig = src_param['zs'][0]
         phi_prime0 = -np.linalg.norm(g)**2
@@ -280,41 +348,84 @@ class ht:
             zs = zs_orig + alpha * g[1]
             ht.update_source(xs,zs,src_file)
             ht.run_simulator('forward', output_name=out_dir)
-            adj_seismogram('%s/Ux_file_single_d.su'%out_dir, 
+            adj_seismogram(
+                '%s/Ux_file_single_d.su'%out_dir, 
                 '%s/Ux_file_single_d.su'%data_dir,
                 misfit_type,
                 '%s/misfitx.log'%out_dir)
-            adj_seismogram('%s/Uz_file_single_d.su'%out_dir, 
+            adj_seismogram(
+                '%s/Uz_file_single_d.su'%out_dir, 
                 '%s/Uz_file_single_d.su'%data_dir,
                 misfit_type,
                 '%s/misfitz.log'%out_dir)
             misfit = ht.get_last('%s/misfitx.log'%out_dir) \
                 + ht.get_last('%s/misfitz.log'%out_dir)
-            print('(curr, g, proposed) = (%s,%s,%s)'%([xs_orig,zs_orig],g,[xs,zs]), file=sys.stderr)
-            print('(alpha, misfit, threshold) = (%.8e, %.8e, %.8e)'%(alpha, 
-                misfit, armijo_threshold(alpha)), file=sys.stderr)
+            print(
+                '(curr, g, proposed) = (%s,%s,%s)'%(
+                    [xs_orig,zs_orig],
+                    g,
+                    [xs,zs]), 
+                file=sys.stderr)
+            print(
+                '(alpha, misfit, threshold) = (%.8e, %.8e, %.8e)'%(
+                    alpha, 
+                    misfit, 
+                    armijo_threshold(alpha)), 
+                file=sys.stderr)
             curr += 1
         print('Successfully backtracked! alpha=%.2e'%(alpha))
         print('Moving backtrack directory "%s" to "%s"'%(out_dir, final_dir))
         os.system('rm -rf %s'%final_dir)
         os.system('mv %s %s'%(out_dir, final_dir))
-        ht.append_close('%.8f'%ht.get_last('%s/misfitx.log'%out_dir), 'misfitx.log')
-        ht.append_close('%.8f'%ht.get_last('%s/misfitz.log'%out_dir), 'misfitz.log')
+        ht.append_close(
+            '%.8f'%ht.get_last('%s/misfitx.log'%out_dir), 
+            'misfitx.log')
+        ht.append_close(
+            '%.8f'%ht.get_last('%s/misfitz.log'%out_dir), 
+            'misfitz.log')
         return xs,zs,alpha
-            
+
+    def rec_discern(
+            ref_filename='DATA/Par_file_ref',
+            filename='DATA/Par_file'
+            ):      
+        u1 = ht.par_pull(ref_filename)
+        u2 = ht.par_pull(filename)
+        real_receiver_no = sum(u1['nrec'])
+        total_receiver_no = sum(u2['nrec'])
+        return real_receiver_no, total_receiver_no
+        
 if( __name__ == "__main__" ):
     try:
         parser = argparse.ArgumentParser(
             description="Driver for source inversion")
         
-        parser.add_argument("mode", type=int, 
+        parser.add_argument(
+            "mode", 
+            type=int, 
             help="mode of execution (int: 1 <= mode <= 8)")
-        parser.add_argument("--misfit", default="l2", type=str,
+        parser.add_argument(
+            "--misfit", 
+            default="l2", 
+            type=str,
             help="Misfit functional, either l2 or w2")
-        parser.add_argument("--plot", default=False, type=bool,
+        parser.add_argument(
+            "--plot", 
+            action='store_true', 
             help="Perform seismogram plots")
-        parser.add_argument("--num_sources", default=10, type=int,
+        parser.add_argument(
+            "--num_sources", 
+            default=10, 
+            type=int,
             help="Convexity plot granularity")
+        parser.add_argument(
+            '--rerun', 
+            action='store_true',
+            help="Rerun forward solving")
+        parser.add_argumnet(
+            '--recompute',
+            action='store_true',
+            help='Recompute misfit')
         args = parser.parse_args()
 
         mode = args.mode
@@ -394,41 +505,71 @@ if( __name__ == "__main__" ):
             recs = 5
             g = ht.src_grad(filenames, src_curr, dt, n=recs)
             src_curr['nreceiversets'] = recs + par_og['nreceiversets'][0]
-            ht.backtrack_and_update(g, src_curr, misfit_type=sys.argv[2].lower(), 
-                c_armijo=0.0001, alpha0=2.0)
+            ht.backtrack_and_update(g, src_curr, 
+                misfit_type=sys.argv[2].lower(), 
+                c_armijo=0.0001, 
+                alpha0=2.0)
         elif( mode == 8 ):
             N = args.num_sources
             a = 100
-            b = 900
+            b = 900    
             sources_x = np.linspace(a, b, N)
             sources_z = np.linspace(a, b, N)
-            # sources = [e for e in product(sources_x,sources_z)]
-            misfits = []
-            os.system('misfit*.log')
-            ref_folder = 'convex_reference'
-            x_suffix = 'Ux_file_single_d.su'
-            z_suffix = 'Uz_file_single_d.su'
-            ref_x = '%s/%s'%(ref_folder, x_suffix)
-            ref_z = '%s/%s'%(ref_folder, z_suffix)
+            real_no, total_no = ht.rec_discern()
+            if( args.recompute ):
+                os.system('rm misfit*.log')
+                
+                ref_folder = 'convex_reference'
+                x_suffix = 'Ux_file_single_d.su'
+                z_suffix = 'Uz_file_single_d.su'
+                ref_x = '%s/%s'%(ref_folder, x_suffix)
+                ref_z = '%s/%s'%(ref_folder, z_suffix)
+                
+                prefix = 'convex'
+                fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
+                get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace(
+                    'x',c))
+                
+                ht.update_source(500.0, 500.0)
+                ht.run_simulator('forward', output_name=ref_folder)
+                
+                hf = helper()
+                
+                data_x = hf.read_SU_file(ref_x)
+                data_z = hf.read_SU_file(ref_z)
+                
+                for (i,ex) in enumerate(sources_x):
+                    for (j,ez) in enumerate(sources_z):
+                        folder = fldr(i,j)
+                        if( args.rerun ):
+                            ht.update_source(ex, ez)
+                            ht.run_simulator('forward', output_name=folder)
+                        syn_x = hf.read_SU_file(get_file(i,j,'x'))
+                        syn_z = hf.read_SU_file(get_file(i,j,'z'))
+                        eval_misfit(
+                            syn_x,
+                            data_x,
+                            mode=args.misfit, 
+                            output='misfitx.log')
+                        eval_misfit(
+                            syn_z,
+                            data_z,
+                            mode=args.misfit,
+                            output='misfitz.log')
+            misfit_x = np.array(
+                ht.read_close('misfitx.log').split('\n')[:-1],
+                dtype=float)
+            misfit_z = np.array(
+                ht.read_close('misfitz.log').split('\n')[:-1],
+                dtype=float)
+            misfits = misfit_x + misfit_z
+            misfits = misfits.reshape((N,N))
+            fig, ax = plt.subplots()
+            im = ax.imshow(misfits, origin='upper', extent=[a,b,a,b])
+            plt.colorbar(im)
+            plt.savefig('%s.pdf'%args.misfit)
 
-            prefix = 'convex'
-            fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
-            get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace('x',
-                c))
-
-            ht.update_source(500.0, 500.0)
-            ht.run_simulator('forward', output_name=ref_folder)
-
-
-            for (i,ex) in enumerate(sources_x):
-                for (j,ez) in enumerate(sources_z):
-                    folder = fldr(i,j)
-                    ht.update_source(ex, ez)
-                    ht.run_simulator('forward', output_name=folder)
-                    adj_seismogram(get_file(i,j,'x'), ref_x, mode=args.misfit, 
-                        output='misfitx.log', perform_plots=args.plot)
-                    adj_seismogram(get_file(i,j,'z'), ref_z, mode=args.misfit,
-                        output='misfitz.log', perform_plots=args.plot)
+            
     except Exception as e:
         traceback.print_exc()
         exit(-1)

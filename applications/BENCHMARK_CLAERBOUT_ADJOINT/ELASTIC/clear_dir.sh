@@ -5,6 +5,7 @@ rm -rf KERNELS
 rm -rf DATA/*bin
 rm -rf DATA/*jpg
 rm -rf SEM
+rm -rf convex*
 mv inversion.py inversion.tmp
 mv helper_tyler.py helper_tyler.tmp
 rm -f *.py

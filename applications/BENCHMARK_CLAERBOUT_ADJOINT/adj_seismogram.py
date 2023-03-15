@@ -315,6 +315,30 @@ def usage():
 #------------------------------------------------------------------------------------------
 #
 
+def eval_misfit(
+        syn,
+        dat, 
+        mode='w2', 
+        output='misfitx.log', 
+        **kw
+        ):
+    hf = helper()
+    diff = syn - dat
+    omit = kw.get('artificial', 0)
+    DT = hf.sampling_DT * 1.e-6
+    if( omit > 0 ):
+        diff = diff[:-omit]
+                
+    if( mode == 'l2' ):
+        with open(output, 'a') as f:
+            f.write('%.8e\n'%np.sum(diff**2))
+    else:
+        raise ValueError('w2 not supported yet')
+
+#
+#------------------------------------------------------------------------------------------
+#
+
 if __name__ == '__main__':
     # gets arguments
     if len(sys.argv) < 3:
