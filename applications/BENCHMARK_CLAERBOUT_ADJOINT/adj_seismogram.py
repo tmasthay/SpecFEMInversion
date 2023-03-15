@@ -318,22 +318,40 @@ def usage():
 def eval_misfit(
         syn,
         dat, 
+        nt,
+        normalization=split_normalize,
         mode='w2', 
         output='misfitx.log', 
         **kw
         ):
     hf = helper()
-    diff = syn - dat
-    omit = kw.get('artificial', 0)
+    omit_after = kw.get('omit_after', 0)
+    if( omit_after > 0 ):
+        syn = syn[:omit_after]
+        dat = dat[:omit_after]
     DT = hf.sampling_DT * 1.e-6
-    if( omit > 0 ):
-        diff = diff[:-omit]
-                
-    if( mode == 'l2' ):
+    if( mode.lower() == 'l2' ):
+        diff = syn - dat
         with open(output, 'a') as f:
             f.write('%.8e\n'%np.sum(diff**2))
+    elif( mode.lower() == 'w2' ):
+        dists = np.zeros(syn.shape[0])
+        restrict = kw.get('restrict', None)
+        for i in range(syn.shape[0]):
+            curr_dat = normalization
+            curr_syn = normalization
+            dists[i], _, _, _, _ = wass_adjoint_and_eval(
+                d=curr_dat,
+                u=curr_syn,
+                dt=DT,
+                ot=0.0,
+                nt=nt,
+                restrict=restrict,
+                multi=True)
+        with open(output, 'a') as f:
+            f.write('%.8e\n'%(sum(dists)))
     else:
-        raise ValueError('w2 not supported yet')
+        raise ValueError('Mode %s not supported'%mode)
 
 #
 #------------------------------------------------------------------------------------------

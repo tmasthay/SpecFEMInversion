@@ -75,7 +75,8 @@ class ht:
     def par_pull(
             filename='DATA/Par_file_ref'
             ):
-        par_map = {'NSTEP': int,
+        par_map = {
+            'NSTEP': int,
             'DT': float,
             'NSOURCES': int,
             'NPROC': int,
@@ -422,10 +423,15 @@ if( __name__ == "__main__" ):
             '--rerun', 
             action='store_true',
             help="Rerun forward solving")
-        parser.add_argumnet(
+        parser.add_argument(
             '--recompute',
             action='store_true',
             help='Recompute misfit')
+        parser.add_argument(
+            '--restrict',
+            default=None,
+            type=float,
+            help='Wasserstein restriction')
         args = parser.parse_args()
 
         mode = args.mode
@@ -510,6 +516,7 @@ if( __name__ == "__main__" ):
                 c_armijo=0.0001, 
                 alpha0=2.0)
         elif( mode == 8 ):
+            nt = par_og['NSTEP'][0]
             N = args.num_sources
             a = 100
             b = 900    
@@ -540,6 +547,7 @@ if( __name__ == "__main__" ):
                 
                 for (i,ex) in enumerate(sources_x):
                     for (j,ez) in enumerate(sources_z):
+                        print('(x,z) = (%f,%f)'%(ex,ez))
                         folder = fldr(i,j)
                         if( args.rerun ):
                             ht.update_source(ex, ez)
@@ -549,13 +557,19 @@ if( __name__ == "__main__" ):
                         eval_misfit(
                             syn_x,
                             data_x,
+                            nt,
                             mode=args.misfit, 
-                            output='misfitx.log')
+                            output='misfitx.log',
+                            omit_after=real_no,
+                            restrict=args.restrict)
                         eval_misfit(
                             syn_z,
                             data_z,
+                            nt,
                             mode=args.misfit,
-                            output='misfitz.log')
+                            output='misfitz.log',
+                            omit_after=real_no,
+                            restrict=args.restrict)
             misfit_x = np.array(
                 ht.read_close('misfitx.log').split('\n')[:-1],
                 dtype=float)
