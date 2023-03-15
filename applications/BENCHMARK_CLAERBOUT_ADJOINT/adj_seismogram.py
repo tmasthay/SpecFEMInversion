@@ -338,8 +338,8 @@ def eval_misfit(
         dists = np.zeros(syn.shape[0])
         restrict = kw.get('restrict', None)
         for i in range(syn.shape[0]):
-            curr_dat = normalization
-            curr_syn = normalization
+            curr_dat = normalization(syn[i])
+            curr_syn = normalization(dat[i])
             dists[i], _, _, _, _ = wass_adjoint_and_eval(
                 d=curr_dat,
                 u=curr_syn,

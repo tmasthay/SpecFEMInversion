@@ -432,8 +432,13 @@ if( __name__ == "__main__" ):
             default=None,
             type=float,
             help='Wasserstein restriction')
+        parser.add_argument(
+            '--subsample',
+            default='det,1.0',
+            help='Receiver subsampling protocol')
         args = parser.parse_args()
-
+        args.subsample = args.subsample.split(',')
+        args.subsample[1] = float(args.subsample[1])
         mode = args.mode
         
         print('Run case: %s'%str(args))
@@ -544,6 +549,25 @@ if( __name__ == "__main__" ):
                 
                 data_x = hf.read_SU_file(ref_x)
                 data_z = hf.read_SU_file(ref_z)
+                data_x = data_x[:real_no]
+                data_z = data_z[:real_no]
+                
+                indices = range(real_no)
+                if( type(args.subsample) == float and args.subsample[1] < 1.0 ):
+                    downsample = int(real_no * args.subsample[1])
+                    if( args.subsample[0] == 'random' ):
+                        indices = np.random.choice(
+                            indices,
+                            downsample,
+                            replace=False)
+                    elif( args.subsample[0] == 'det' ):
+                        indices = list(indices)[::downsample]
+                    else:
+                        raise ValueError(
+                            'Mode %s not supported'%(
+                                args.subsample[0]))
+                else:
+                    indices = np.load(args.subsample[1])
                 
                 for (i,ex) in enumerate(sources_x):
                     for (j,ez) in enumerate(sources_z):

@@ -55,6 +55,22 @@ def transport_distance(d,u,dt,ot):
     Q = quantile(D,U,dt,ot)
     return Q-t, D, U
 
+def wass_distance(d,u,dt,ot,**kw):
+    nt = len(d)
+    restrict = kw.get('restrict', None)
+    i1, i2 = cut(nt, restrict)
+    Q,D,U = transport_distance(d,u,dt,ot)
+    return dt * np.trapz(Q[i1:i2]**2*u[i1:i2])
+
+def wass_poly(d,u,dt,ot, **kw):
+    norm = kw.get('norm', split_normalize)
+    d_norm = norm(d)
+    u_norm = norm(u)
+    total = 0.0
+    for (dd,uu) in zip(d_norm, u_norm):
+        total += wass_distance(dd,uu,dt,ot,**kw)
+    return total
+
 def accumulate_adjoint(g):
     u = np.flip(np.cumsum(np.flip(g)))
     return np.append(0.5 * (u[:-1] + u[1:] - g[-1]), 0.0)
