@@ -14,6 +14,7 @@ def cut(n,restrict):
     if( type(restrict) == type(None) ):
         return 0,n
     if( type(restrict) == float or len(restrict) == 1 ):
+        if( restrict > 0.5 ): restrict = 1.0 - restrict
         restrict = [restrict, 1.0 - restrict]
     p,q = restrict
     assert( p <= q and p <= 1.0 and q <= 1.0 )
