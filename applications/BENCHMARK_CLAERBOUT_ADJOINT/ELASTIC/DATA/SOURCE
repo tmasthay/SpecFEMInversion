@@ -1,7 +1,7 @@
 ## Source 1
 source_surf                     = .false.        # source inside the medium, or source automatically moved exactly at the surface by the solver
-xs                            = 900.0
-zs                            = 900.0
+xs                            = 500.0
+zs                            = 500.0
 ## Source type parameters:
 #  1 = elastic force or acoustic pressure
 #  2 = moment tensor
@@ -57,8 +57,8 @@ vz                              = 0.0            # Vertical source velocity (m/s
 
 # # Source 2
 # source_surf                     = .false.        # source inside the medium, or source automatically moved exactly at the surface by the solver
-# xs                            = 900.0
-# zs                            = 900.0
+# xs                            = 122.8
+# zs                            = 337.1
 # source_type                     = 2
 # time_function_type              = 1
 # name_of_source_file             = YYYYYYYYYYYYYYYYYY   # Only for option 8 : file containing the source wavelet
@@ -75,8 +75,8 @@ vz                              = 0.0            # Vertical source velocity (m/s
 
 # ## Source 3
 # source_surf                     = .false.        # source inside the medium, or source automatically moved exactly at the surface by the solver
-# xs                            = 900.0
-# zs                            = 900.0
+# xs                            = 122.8
+# zs                            = 337.1
 # source_type                     = 2
 # time_function_type              = 3
 # name_of_source_file             = YYYYYYYYYYYYYYYYYY   # Only for option 8 : file containing the source wavelet

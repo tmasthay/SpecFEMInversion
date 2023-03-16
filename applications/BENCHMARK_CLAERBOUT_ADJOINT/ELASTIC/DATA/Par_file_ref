@@ -24,7 +24,7 @@ NPROC                           = 1              # number of processes
 NSTEP                           = 600
 
 # duration of a time step (see section "How to choose the time step" of the manual for how to do this)
-DT                              = 0.00035
+DT                              = 0.00140
 
 # time stepping
 # 1 = Newmark (2nd order), 2 = LDDRK4-6 (4th-order 6-stage low storage Runge-Kutta), 3 = classical RK4 4th-order 4-stage Runge-Kutta
@@ -302,7 +302,7 @@ interfacesfile                  = ./interfaces.dat
 # geometry of the model (origin lower-left corner = 0,0) and mesh description
 xmin                            = 0.d0           # abscissa of left side of the model
 xmax                            = 1000.d0        # abscissa of right side of the model
-nx                              = 100            # number of elements along X
+nx                              = 25            # number of elements along X
 
 # absorbing boundary parameters (see absorbing_conditions above)
 absorbbottom                    = .true.
@@ -313,7 +313,8 @@ absorbleft                      = .true.
 # define the different regions of the model in the (nx,nz) spectral-element mesh
 nbregions                       = 1              # then set below the different regions and model number for each region
 # format of each line: nxmin nxmax nzmin nzmax material_number
-1  100  1 100 1
+# 1  100  1 100 1
+1 25 1 25 1
 
 #-----------------------------------------------------------
 #
