@@ -439,6 +439,7 @@ if( __name__ == "__main__" ):
         args = parser.parse_args()
         args.subsample = args.subsample.split(',')
         args.subsample[1] = float(args.subsample[1])
+        
         mode = args.mode
         
         print('Run case: %s'%str(args))
@@ -553,7 +554,8 @@ if( __name__ == "__main__" ):
                 data_z = data_z[:real_no]
                 
                 indices = range(real_no)
-                if( type(args.subsample) == float and args.subsample[1] < 1.0 ):
+                if(     type(args.subsample[1]) == float \
+                        and args.subsample[1] < 1.0):
                     downsample = int(real_no * args.subsample[1])
                     if( args.subsample[0] == 'random' ):
                         indices = np.random.choice(
@@ -561,13 +563,16 @@ if( __name__ == "__main__" ):
                             downsample,
                             replace=False)
                     elif( args.subsample[0] == 'det' ):
-                        indices = list(indices)[::downsample]
+                        indices = list(indices)[::real_no // downsample]
                     else:
                         raise ValueError(
                             'Mode %s not supported'%(
                                 args.subsample[0]))
-                else:
+                elif( type(args.subsample[1]) == str ):
                     indices = np.load(args.subsample[1])
+                
+                data_x = data_x[indices]
+                data_z = data_z[indices]
                 
                 for (i,ex) in enumerate(sources_x):
                     for (j,ez) in enumerate(sources_z):
@@ -576,8 +581,8 @@ if( __name__ == "__main__" ):
                         if( args.rerun ):
                             ht.update_source(ex, ez)
                             ht.run_simulator('forward', output_name=folder)
-                        syn_x = hf.read_SU_file(get_file(i,j,'x'))
-                        syn_z = hf.read_SU_file(get_file(i,j,'z'))
+                        syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
+                        syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
                         eval_misfit(
                             syn_x,
                             data_x,

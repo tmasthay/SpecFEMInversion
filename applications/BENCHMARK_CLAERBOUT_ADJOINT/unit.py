@@ -11,7 +11,7 @@ os.system('mkdir -p unit_test_plots/')
 os.system('mkdir -p unit_test_plots/wasserstein/')
 
 ### BEGIN UNIT TESTS FOR wasserstein.py ###
-test_wasserstein = False
+test_wasserstein = True
 if( test_wasserstein ):
     def get_gauss(mu, sig, a, b, nt):
         nt = int(nt)

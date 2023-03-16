@@ -337,17 +337,16 @@ def eval_misfit(
     elif( mode.lower() == 'w2' ):
         dists = np.zeros(syn.shape[0])
         restrict = kw.get('restrict', None)
-        for i in range(syn.shape[0]):
-            curr_dat = normalization(syn[i])
-            curr_syn = normalization(dat[i])
-            dists[i], _, _, _, _ = wass_adjoint_and_eval(
+        i = 0
+        for (curr_dat, curr_syn) in zip(dat, syn):
+            dists[i] = wass_poly(
                 d=curr_dat,
                 u=curr_syn,
                 dt=DT,
                 ot=0.0,
-                nt=nt,
                 restrict=restrict,
-                multi=True)
+                norm=normalization)
+            i += 1
         with open(output, 'a') as f:
             f.write('%.8e\n'%(sum(dists)))
     else:
