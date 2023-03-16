@@ -522,6 +522,8 @@ if( __name__ == "__main__" ):
                 c_armijo=0.0001, 
                 alpha0=2.0)
         elif( mode == 8 ):
+            os.system('cp DATA/Par_file_ref DATA/Par_file')
+            os.system('cp DATA/SOURCE_REF DATA/SOURCE')
             nt = par_og['NSTEP'][0]
             N = args.num_sources
             a = 100
