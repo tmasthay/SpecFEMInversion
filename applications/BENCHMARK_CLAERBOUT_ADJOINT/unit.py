@@ -35,7 +35,9 @@ if( test_wasserstein_v2 ):
 
     kind='cubic'
     res = 1e-9
-    wpg,dist_ref = wass_v2(g,x,kind=kind,resolution=res)
+    restrict = 0.1
+    i1,i2 = cut(N,restrict)
+    wpg,dist_ref = wass_v2(g,x,kind=kind,resolution=res,restrict=restrict)
 
     mu2 = 1.0
     sig2 = 1.0
@@ -63,6 +65,7 @@ if( test_wasserstein_v2 ):
             linestyle='-.'
         )
         plt.plot(x, x, color='blue', linestyle=':', label='Identity')
+        plt.axvspan(x[i1], x[i2], color='purple', linestyle='|')
         plt.legend()
 
         plt.subplot(1,2,2)
@@ -79,6 +82,7 @@ if( test_wasserstein_v2 ):
             label=r'Correct $f(x)(G^{-1}(F(x))-x)^2$',
             linestyle='-.'
         )
+        plt.axvspan(x[i1], x[i2], color='purple', linestyle='|')
         plt.legend()
         plt.savefig('unit_test_plots/wasserstein/v2_transport.pdf')
 
@@ -129,6 +133,7 @@ if( test_wasserstein_v2 ):
             label=r'$G(x)$'
         )
         plt.legend()
+        plt.axvspan(x[i1], x[i2], color='purple', linestyle='|')
         plt.savefig('unit_test_plots/wasserstein/v2_cdf.pdf')
         assert err <= tol, 'wass_v2 (err,tol)=(%.2e,%.2e)'%(err,tol)
 
