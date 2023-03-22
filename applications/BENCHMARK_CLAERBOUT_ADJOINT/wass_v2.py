@@ -32,9 +32,12 @@ def eff_support(x, tol):
     return i1,max(i2, i1+1)
 
 def split_normalize(f, dx, clip_val=None):
+    clip_val = 0.0 if type(clip_val) == None else clip_val
     f_abs = np.abs(f)
     pos = 0.5 * (f_abs + f)
     neg = pos - f
+    pos = pos + clip_val
+    neg = neg + clip_val
 
     c_pos = np.trapz(pos, dx=dx)
     c_neg = np.trapz(neg, dx=dx)
@@ -42,12 +45,23 @@ def split_normalize(f, dx, clip_val=None):
         pos /= c_pos
     if( c_neg > 0 ):
         neg /= c_neg
+    # if( type(clip_val) != None ):
+    #     i1,i2 = eff_support(pos, clip_val * np.max(pos))
+    #     i3,i4 = eff_support(neg, clip_val * np.max(neg))
+    #     return pos, neg, range(i1,i2), range(i3,i4)
+    # else:
+    #     return pos, neg
+    return pos,neg
+    
+def square_normalize(f, dx, clip_val=None):
+    u = f**2
+    c = np.trapz(u,dx=dx)
+    u = u if c == 0 else u / c
     if( type(clip_val) != None ):
-        i1,i2 = eff_support(pos, clip_val * np.max(pos))
-        i3,i4 = eff_support(neg, clip_val * np.max(neg))
-        return pos, neg, range(i1,i2), range(i3,i4)
+        i1,i2 = eff_support(u, clip_val * np.max(u))
+        return u, range(i1,i2)
     else:
-        return pos, neg
+        return u
 
 def cut(n,restrict):
     if( type(restrict) == type(None) ):
@@ -99,51 +113,90 @@ def create_evaluators(
             ),
             flush=True
         )
-        ux_pos, ux_neg, ixp, ixn = split_normalize(data_x[i], dt, clip_val=tau)
-        uz_pos, uz_neg, izp, izn = split_normalize(data_z[i], dt, clip_val=tau)
+        ux_norm, ix = square_normalize(data_x[i], dt, clip_val=tau)
+        uz_norm, iz = square_normalize(data_z[i], dt, clip_val=tau)
+        if( i < 5 ):
+            plt.subplot(1,3,1)
+            plt.plot(t, data_x[i], label='rawx', color='blue')
+            plt.plot(t, data_z[i], label='rawz', color='red', linestyle='-.')
+            plt.legend()
 
+            plt.subplot(1,3,2)
+            plt.plot(t[ix], ux_norm[ix], label='x', linestyle='-', color='green')
+            plt.plot(t[iz], uz_norm[iz], label='z', linestyle='-.', color='red')
+            plt.legend()
 
-
-
-        plt.plot(t, data_x[i], label='raw', color='blue')
-        plt.plot(t, ux_pos, label='pos', linestyle='-.', color='green')
-        plt.plot(t, ux_neg, label='neg', linestyle=':', color='red')
-        plt.legend()
-        plt.show()
-
-        wx_pos = wass_v2(
-            ux_pos[ixp],
-            t[ixp],
+            plt.subplot(1,3,3)
+            plt.plot(
+                t[ix],
+                cumulative_trapezoid(ux_norm[ix], dx=dt, initial=0.0),
+                label='Windowed CDF x', 
+                linestyle='-', 
+                color='green'
+            )
+            plt.plot(
+                t[iz],
+                cumulative_trapezoid(uz_norm[iz], dx=dt, initial=0.0),
+                label='Windowed CDF z', 
+                linestyle='-.', 
+                color='red'
+            )
+            plt.savefig('%d.pdf'%i)
+        wx = wass_v2(
+            ux_norm[ix],
+            t[ix],
             kind=kind,
             resolution=resolution,
             store_q=False,
             restrict=None
         )
-        wx_neg = wass_v2(
-            ux_neg[ixn],
-            t[ixn],
+        wz = wass_v2(
+            uz_norm[iz],
+            t[iz],
             kind=kind,
             resolution=resolution,
             store_q=False,
             restrict=None
         )
-        wz_pos = wass_v2(
-            uz_pos[izp],
-            t[izp],
-            kind=kind,
-            resolution=resolution,
-            store_q=False,
-            restrict=None
-        )
-        wz_neg = wass_v2(
-            uz_neg[izn],
-            t[izn],
-            kind=kind,
-            resolution=resolution,
-            store_q=False,
-            restrict=None
-        )
-        evaluators.append([wx_pos,wx_neg,wz_pos,wz_neg])
+        # ux_pos, ux_neg, ixp, ixn = split_normalize(data_x[i], dt, clip_val=tau)
+        # uz_pos, uz_neg, izp, izn = split_normalize(data_z[i], dt, clip_val=tau)
+        # ux_pos, ux_neg = split_normalize(data_x[i], dt, clip_val=tau)
+        # uz_pos, uz_neg = split_normalize(data_z[i], dt, clip_val=tau)
+
+
+        # wx_pos = wass_v2(
+        #     ux_pos,
+        #     t,
+        #     kind=kind,
+        #     resolution=resolution,
+        #     store_q=False,
+        #     restrict=None
+        # )
+        # wx_neg = wass_v2(
+        #     ux_neg,
+        #     t,
+        #     kind=kind,
+        #     resolution=resolution,
+        #     store_q=False,
+        #     restrict=None
+        # )
+        # wz_pos = wass_v2(
+        #     uz_pos,
+        #     t,
+        #     kind=kind,
+        #     resolution=resolution,
+        #     store_q=False,
+        #     restrict=None
+        # )
+        # wz_neg = wass_v2(
+        #     uz_neg,
+        #     t,
+        #     kind=kind,
+        #     resolution=resolution,
+        #     store_q=False,
+        #     restrict=None
+        # )
+        evaluators.append([wx, wz])
     return evaluators
         
 
