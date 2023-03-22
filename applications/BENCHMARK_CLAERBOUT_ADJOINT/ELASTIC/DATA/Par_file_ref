@@ -21,7 +21,7 @@ NPROC                           = 1              # number of processes
 
 # time step parameters
 # total number of time steps
-NSTEP                           = 600
+NSTEP                           = 1500
 
 # duration of a time step (see section "How to choose the time step" of the manual for how to do this)
 DT                              = 0.00140
@@ -179,7 +179,7 @@ anglerec                        = 0.d0           # angle to rotate components at
 rec_normal_to_surface           = .false.        # base anglerec normal to surface (external mesh and curve file needed)
 
 # first receiver set (repeat these 6 lines and adjust nreceiversets accordingly)
-nrec                            = 1000             # number of receivers
+nrec                            = 500             # number of receivers
 xdeb                            = 0.           # first receiver x in meters
 zdeb                            = 0.          # first receiver z in meters
 xfin                            = 1000.          # last receiver x in meters (ignored if only one receiver)

@@ -13,6 +13,7 @@ from adj_seismogram import eval_misfit, adj_seismogram
 from itertools import product
 import argparse
 import traceback
+import imageio
 
 class ht:
     def sco(
@@ -396,6 +397,33 @@ class ht:
         total_receiver_no = sum(u2['nrec'])
         return real_receiver_no, total_receiver_no
         
+    def make_gif(
+            x,
+            y,
+            name,
+            fps=10,
+            title_seq=lambda i : 'Frame %d'%i,
+            verbose=True
+            ):
+        # Create a list to store frames
+        frames = []
+
+        # Loop through the data and create frames
+        for i in range(len(y)):
+            if( verbose ):
+                print('Processing Frame %d of %d'%(i, len(y)))
+            # Plot the data
+            plt.plot(x, y[i])
+            plt.title(title_seq(i))
+            plt.savefig('%d.png'%i)
+            plt.clf()
+
+            frames.append(imageio.v2.imread('%d.png'%i))
+
+        # Use imageio to create a GIF animation
+        imageio.mimsave('%s.gif'%name.replace('.gif',''), frames, fps=fps)
+        os.system('rm *.png')
+
 if( __name__ == "__main__" ):
     try:
         parser = argparse.ArgumentParser(
@@ -585,6 +613,8 @@ if( __name__ == "__main__" ):
                             ht.run_simulator('forward', output_name=folder)
                         syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
                         syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
+                        os.system('find %s ! -name "*.su" -type f -delete'%(
+                            folder))
                         eval_misfit(
                             syn_x,
                             data_x,
@@ -613,8 +643,51 @@ if( __name__ == "__main__" ):
             im = ax.imshow(misfits, origin='upper', extent=[a,b,a,b])
             plt.colorbar(im)
             plt.savefig('%s.pdf'%args.misfit)
-
-            
+        elif( mode == 9 ):
+            hf = helper()
+            x_data = []
+            z_data = []
+            if( args.rerun ):
+                x_files = ht.sco('find convex* -name "Ux_file*.su"', True)
+                z_files = ht.sco('find convex* -name "Uz_file*.su"', True)
+                for xf in x_files:
+                    x_data.append(hf.read_SU_file(xf))
+                    prefix = '/'.join(xf.split('/')[:-1])
+                    suffix = 'ux.npy'
+                    np.save('%s/%s'%(prefix,suffix), x_data[-1])
+                for zf in z_files:
+                    z_data.append(hf.read_SU_file(zf))
+                    prefix = '/'.join(zf.split('/')[:-1])
+                    suffix = 'uz.npy'
+                    np.save('%s/%s'%(prefix,suffix), z_data[-1])
+            else:
+                x_files = ht.sco('find convex* -name "ux.npy"', True)
+                z_files = ht.sco('find convex* -name "uz.npy"', True)
+                [x_data.append(np.load(f)) for f in x_files]
+                [z_data.append(np.load(f)) for f in z_files]
+            x_data = np.transpose(x_data,axes=(0,1,2))
+            z_data = np.transpose(z_data,axes=(0,1,2))
+            dt = par_og['DT'][0]
+            t = [i * dt for i in range(x_data.shape[-1])]
+            src_order = ht.sco(
+                'ls -tr | grep "convex_[0-9]_*" | sed "s/convex_//"', 
+                True)
+            for i in range(x_data.shape[0]):
+                curr_x = x_data[i]
+                curr_z = z_data[i]
+                print('Processing gif %d'%i)
+                ht.make_gif(
+                    t, 
+                    curr_x,
+                    'x_traces_%s.gif'%src_order[i], 
+                    title_seq=lambda j : 'Receiver %d'%j,
+                    verbose=False)
+                ht.make_gif(
+                    t, 
+                    curr_z,
+                    'z_traces_%s.gif'%src_order[i],
+                    title_seq=lambda j : 'Receiver %d'%j, 
+                    verbose=False)
     except Exception as e:
         traceback.print_exc()
         exit(-1)

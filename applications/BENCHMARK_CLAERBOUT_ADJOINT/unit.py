@@ -6,13 +6,133 @@ import os
 from helper_tyler import *
 from helper_functions import *
 from scipy.interpolate import RectBivariateSpline as RBS
+from scipy.stats import norm
+from scipy.integrate import cumulative_trapezoid
+from matplotlib import rcParams
 
 os.system('mkdir -p unit_test_plots/')
 os.system('mkdir -p unit_test_plots/wasserstein/')
 
+test_wasserstein_v1 = False
+test_wasserstein_v2 = True
+test_helper_tyler = False
+
+rcParams['text.usetex'] = True
+
 ### BEGIN UNIT TESTS FOR wasserstein.py ###
-test_wasserstein = True
-if( test_wasserstein ):
+if( test_wasserstein_v2 ):
+    a = -5
+    b = 5
+    N = 1000
+
+
+    x = np.linspace(a,b,N)
+
+    mu = 0.0
+    sig = 1.0
+    dist = norm(loc=mu,scale=sig)
+    g = dist.pdf(x)
+
+    kind='cubic'
+    res = 1e-9
+    wpg,dist_ref = wass_v2(g,x,kind=kind,resolution=res)
+
+    mu2 = 1.0
+    sig2 = 1.0
+    dist2 = norm(loc=mu2,scale=sig2)
+    f = dist2.pdf(x)
+    F = dist2.cdf(x)
+
+    def test_wass_v2():
+        tol = res
+        val = wpg(f,F)
+        ref_val = (mu-mu2)**2 + (sig-sig2)**2
+        err = np.abs(val - ref_val)
+        plt.subplot(1,2,1)
+        plt.plot(
+            x, 
+            dist_ref.ppf(F), 
+            color='red', 
+            label=r'Computed $G^{-1}(F(x))$',
+        )
+        plt.plot(
+            x, 
+            dist.ppf(F), 
+            color='violet', 
+            label=r'Correct $G^{-1}(F(x))$',
+            linestyle='-.'
+        )
+        plt.plot(x, x, color='blue', linestyle=':', label='Identity')
+        plt.legend()
+
+        plt.subplot(1,2,2)
+        plt.plot(
+            x, 
+            (dist_ref.ppf(F)-x)**2*f, 
+            color='red',
+            label=r'Computed $f(x)(G^{-1}(F(x))-x)^2$'
+        )
+        plt.plot(
+            x, 
+            (dist.ppf(F)-x)**2*f, 
+            color='violet',
+            label=r'Correct $f(x)(G^{-1}(F(x))-x)^2$',
+            linestyle='-.'
+        )
+        plt.legend()
+        plt.savefig('unit_test_plots/wasserstein/v2_transport.pdf')
+
+        plt.clf()
+        delta = 1e-5
+        p = np.linspace(delta, 1-delta, 1000)
+        plt.plot(p, dist.ppf(p), color='red', label=r'$G_{correct}^{-1}(p)$')
+        plt.plot(
+            p,
+            dist_ref.ppf(p),
+            color='blue',
+            linestyle=':',
+            label=r'$G_{computed}^{-1}(p)$'
+        )
+        plt.legend()
+        plt.savefig('unit_test_plots/wasserstein/v2_quantile.pdf')
+
+        plt.clf()
+        plt.subplot(1,2,1)
+        plt.title('PDF')
+        plt.plot(
+            x, 
+            f, 
+            color='red',
+            label=r'$f(x)$'
+        )
+        plt.plot(
+            x,
+            g,
+            color='blue',
+            linestyle='-.',
+            label=r'$g(x)$'
+        )
+        plt.legend()
+        plt.subplot(1,2,2)
+        plt.title('CDF')
+        plt.plot(
+            x, 
+            F,
+            color='red',
+            label=r'$F(x)$'
+        )
+        plt.plot(
+            x, 
+            dist.cdf(x),
+            color='blue',
+            linestyle='-.',
+            label=r'$G(x)$'
+        )
+        plt.legend()
+        plt.savefig('unit_test_plots/wasserstein/v2_cdf.pdf')
+        assert err <= tol, 'wass_v2 (err,tol)=(%.2e,%.2e)'%(err,tol)
+
+if( test_wasserstein_v1 ):
     def get_gauss(mu, sig, a, b, nt):
         nt = int(nt)
         t = np.linspace(a, b, nt)
@@ -136,8 +256,6 @@ if( test_wasserstein ):
         plt.savefig('unit_test_plots/wasserstein/split_normalize.pdf')
         assert valid, "Incorrect normalization"
 ### END TESTS FOR wasserstein.py ###
-
-test_helper_tyler = True
 
 if( test_helper_tyler ):
     unit_test_dir = 'unit_tests'

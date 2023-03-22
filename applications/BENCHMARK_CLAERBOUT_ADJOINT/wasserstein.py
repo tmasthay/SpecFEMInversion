@@ -1,5 +1,26 @@
 import numpy as np
 from itertools import accumulate
+from scipy.integrate import cumulative_trapezoid
+from scipy.interpolate import interp1d
+from scipy.stats.sampling import NumericalInverseHermite
+
+def cts_quantile(x,y, kind='cubic', resolution=1e-5):
+    class Dummy:
+        def __init__(self, pdf_arg, cdf_arg):
+            self.pdf = pdf_arg
+            self.cdf = cdf_arg
+    dx = x[1] - x[0]
+    p = interp1d(x,y,kind=kind)
+    c = interp1d(x,cumulative_trapezoid(y,dx=dx,initial=0.0))
+    f = Dummy(p,c)
+    order = 3 if kind == 'cubic' else 5 if kind == 'quintic' else 1
+    f.ppf = NumericalInverseHermite(
+        f, 
+        domain=(x[0],x[-1]),
+        order=order,
+        u_resolution=resolution
+    ).ppf
+    return f
 
 def split_normalize(f):
     pos = np.array([e if e > 0 else 0.0 for e in f])
@@ -110,3 +131,14 @@ def wass_adjoint_and_eval(**kw):
             Q, \
             D, \
             U
+    
+def wass_v2(g,x,kind='cubic',resolution=1e-5,store_q=True, restrict=None):
+    dx = x[1] - x[0]
+    dist_ref = cts_quantile(x,g,kind=kind,resolution=resolution)
+    i1,i2 = cut(len(x), restrict)
+    def helper(f, F):
+        return np.trapz((dist_ref.ppf(F)[i1:i2] - x[i1:i2])**2*f[i1:i2], dx=dx)
+    if( store_q ):
+        return helper, dist_ref
+    else:
+        return helper
