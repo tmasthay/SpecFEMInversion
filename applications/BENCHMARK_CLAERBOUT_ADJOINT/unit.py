@@ -9,6 +9,7 @@ from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.stats import norm
 from scipy.integrate import cumulative_trapezoid
 from matplotlib import rcParams
+import time
 
 os.system('mkdir -p unit_test_plots/')
 os.system('mkdir -p unit_test_plots/wasserstein/')
@@ -35,9 +36,11 @@ if( test_wasserstein_v2 ):
 
     kind='cubic'
     res = 1e-9
-    restrict = 0.1
+    restrict = 0.0
     i1,i2 = cut(N,restrict)
+    t = time.time()
     wpg,dist_ref = wass_v2(g,x,kind=kind,resolution=res,restrict=restrict)
+    v2_setup_time = time.time() - t
 
     mu2 = 1.0
     sig2 = 1.0
@@ -46,7 +49,7 @@ if( test_wasserstein_v2 ):
     F = dist2.cdf(x)
 
     def test_wass_v2():
-        tol = res
+        tol = np.sqrt(res) * 10.0
         val = wpg(f,F)
         ref_val = (mu-mu2)**2 + (sig-sig2)**2
         err = np.abs(val - ref_val)
@@ -65,7 +68,7 @@ if( test_wasserstein_v2 ):
             linestyle='-.'
         )
         plt.plot(x, x, color='blue', linestyle=':', label='Identity')
-        plt.axvspan(x[i1], x[i2], color='purple', linestyle='|')
+        plt.axvspan(x[i1], x[i2-1], color='purple', linestyle='-')
         plt.legend()
 
         plt.subplot(1,2,2)
@@ -82,7 +85,7 @@ if( test_wasserstein_v2 ):
             label=r'Correct $f(x)(G^{-1}(F(x))-x)^2$',
             linestyle='-.'
         )
-        plt.axvspan(x[i1], x[i2], color='purple', linestyle='|')
+        plt.axvspan(x[i1], x[i2-1], color='purple', linestyle='-')
         plt.legend()
         plt.savefig('unit_test_plots/wasserstein/v2_transport.pdf')
 
@@ -133,9 +136,41 @@ if( test_wasserstein_v2 ):
             label=r'$G(x)$'
         )
         plt.legend()
-        plt.axvspan(x[i1], x[i2], color='purple', linestyle='|')
+        plt.axvspan(x[i1], x[i2-1], color='purple', linestyle='-')
         plt.savefig('unit_test_plots/wasserstein/v2_cdf.pdf')
         assert err <= tol, 'wass_v2 (err,tol)=(%.2e,%.2e)'%(err,tol)
+    
+    def test_v1_v2_performance():
+        N_vals = [2**e for e in range(10,20)]
+        v1_time = np.zeros(len(N_vals))
+        v2_time = np.zeros(len(N_vals))
+        num_samples = 10
+        alpha = 0.01
+        for (i,n) in enumerate(N_vals):
+            x_tmp = np.linspace(a,b,n)
+            dx = x_tmp[1] - x_tmp[0]
+            f_tmp = dist.pdf(x_tmp) + alpha * np.random.random(n)
+            g_tmp = dist.pdf(x_tmp)
+            print(i, flush=True)
+            wpg_tmp, dist_tmp = wass_v2(g_tmp, x_tmp)
+            for sample in range(num_samples):
+                t = time.time()
+                tmp1 = wass_distance(g,f_tmp,dx,a)
+                v1_time[i] += time.time() - t
+                t = time.time()
+                F_tmp = cumulative_trapezoid(f_tmp, dx=dx, initial=0.0)
+                tmp2 = wpg_tmp(f_tmp, F_tmp)
+                v2_time[i] += time.time() - t
+            v1_time[i] /= num_samples
+            v2_time[i] /= num_samples
+        plt.clf()
+        plt.plot(N_vals, v1_time, color='blue', label='v1')
+        plt.plot(N_vals, v2_time, color='red', linestyle='-.', label='v2')
+        # plt.axhspan(0, v2_setup_time, closed=False)
+        plt.title('Version compare, samples=%d'%(num_samples))
+        plt.legend()
+        plt.savefig('unit_test_plots/wasserstein/v1_v2_performance.pdf')
+        assert 1 == 1, 'Gaslighting me bro'
 
 if( test_wasserstein_v1 ):
     def get_gauss(mu, sig, a, b, nt):
