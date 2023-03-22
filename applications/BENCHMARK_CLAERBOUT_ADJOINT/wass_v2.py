@@ -54,9 +54,12 @@ def split_normalize(f, dx, clip_val=None):
     return pos,neg
     
 def square_normalize(f, dx, clip_val=None):
-    u = f**2
+    u = f**2 + 1.0
     c = np.trapz(u,dx=dx)
     u = u if c == 0 else u / c
+    u = u + 0.1
+    c = np.trapz(u, dx=dx)
+    u = u / c
     if( type(clip_val) != None ):
         i1,i2 = eff_support(u, clip_val * np.max(u))
         return u, range(i1,i2)
