@@ -57,7 +57,7 @@ def square_normalize(f, dx, clip_val=None):
     u = f**2 + 1.0
     c = np.trapz(u,dx=dx)
     u = u if c == 0 else u / c
-    u = u + 0.1
+    u = u + 1.0
     c = np.trapz(u, dx=dx)
     u = u / c
     if( type(clip_val) != None ):
@@ -201,5 +201,49 @@ def create_evaluators(
         # )
         evaluators.append([wx, wz])
     return evaluators
+
+def get_info(f, dx, tau=None):
+    f_norm, ix = square_normalize(f, dx, clip_val=tau)
+    F = cumulative_trapezoid(f_norm, dx=dx, initial=0.0)
+    return f_norm, F, ix
+
+def wass_landscape(evaluators):
+    tau = 0.01
+    dt = 0.00140
+    hf = helper()
+    folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(100)] \
+        for j in range(100)]
+    vals = np.zeros((100,100))
+    
+    num_recs = 501
+    start_time = time.time()
+    for i in range(100):
+        for j in range(100):
+            avg_time = (time.time() - start_time) / max(100*i+j,1)
+            print('(%d,%d)/(%d,%d) *** ELAPSED: %.2e *** ETA: %.2e'%(
+                i,
+                j,
+                100,
+                100,
+                avg_time * max(i*100+j,1),
+                avg_time * (num_recs - (i*100+j))
+                ),
+                flush=True
+            )
+            fx = '%s/Ux_file_single_d.su'%folders[i][j]
+            fz = '%s/Uz_file_single_d.su'%folders[i][j]
+            ux = hf.read_SU_file(fx)
+            uz = hf.read_SU_file(fz)
+            s = 0.0
+            for k in range(ux.shape[0]):
+                curr_x = evaluators[k][0]
+                curr_z = evaluators[k][1]
+                ux_pdf, ux_cdf, ix = get_info(ux[k], dx=dt, tau=tau)
+                uz_pdf, uz_cdf, ix = get_info(uz[k], dx=dt, tau=tau)
+                vals[i,j] += curr_x(ux_pdf, ux_cdf) + curr_z(uz_pdf, uz_cdf)
+    return vals
+
+
+    
         
 
