@@ -105,7 +105,7 @@ def create_evaluators(
     dt = t[1] - t[0]
     start_time = time.time()
     num_recs = data_x.shape[0]
-    tau = 0.01
+    tau = kw.get('tau', 0.01)
     for i in range(num_recs):
         avg_time = (time.time() - start_time) / max(i,1)
         print('%d/%d ||| ELAPSED: %.2e ||| ETA: %.2e'%(
@@ -207,18 +207,19 @@ def get_info(f, dx, tau=None):
     F = cumulative_trapezoid(f_norm, dx=dx, initial=0.0)
     return f_norm, F, ix
 
-def wass_landscape(evaluators):
-    tau = 0.01
-    dt = 0.00140
+def wass_landscape(evaluators, **kw):
+    tau = kw.get('tau', 0.01)
+    dt = kw.get('dt', 0.00140)
+    num_shifts = kw.get('num_shifts', 100)
     hf = helper()
-    folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(100)] \
-        for j in range(100)]
-    vals = np.zeros((100,100))
+    folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(num_shifts)] \
+        for j in range(num_shifts)]
+    vals = np.zeros((num_shifts,num_shifts))
     
-    num_recs = 501
+    num_recs = kw.get('num_recs', 501)
     start_time = time.time()
-    for i in range(100):
-        for j in range(100):
+    for i in range(num_shifts):
+        for j in range(num_shifts):
             avg_time = (time.time() - start_time) / max(100*i+j,1)
             print('(%d,%d)/(%d,%d) *** ELAPSED: %.2e *** ETA: %.2e'%(
                 i,
@@ -226,7 +227,7 @@ def wass_landscape(evaluators):
                 100,
                 100,
                 avg_time * max(i*100+j,1),
-                avg_time * (num_recs - (i*100+j))
+                avg_time * (num_shifts**2 - (i*100+j))
                 ),
                 flush=True
             )
