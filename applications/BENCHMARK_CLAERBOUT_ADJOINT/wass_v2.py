@@ -79,12 +79,24 @@ def cut(n,restrict):
     if( i2 > n ): i2 = n
     return i1,i2
     
-def wass_v2(g,x,kind='cubic',resolution=1e-5,store_q=True, restrict=None):
+def wass_v2(
+        g,
+        x,
+        kind='cubic',
+        resolution=1e-5,
+        store_q=True, 
+        restrict=None,
+        explicit_restrict=None
+    ):
     dx = x[1] - x[0]
     dist_ref = cts_quantile(x,g,kind=kind,resolution=resolution)
-    i1,i2 = cut(len(x), restrict)
+    if( type(explicit_restrict) != None ):
+        idx = explicit_restrict
+    else:
+        i1,i2 = cut(len(x), restrict)
+        idx = range(i1,i2)
     def helper(f, F):
-        return np.trapz((dist_ref.ppf(F)[i1:i2] - x[i1:i2])**2*f[i1:i2], dx=dx)
+        return np.trapz((dist_ref.ppf(F)[idx] - x[idx])**2*f[idx], dx=dx)
     if( store_q ):
         return helper, dist_ref
     else:
@@ -151,7 +163,8 @@ def create_evaluators(
             kind=kind,
             resolution=resolution,
             store_q=False,
-            restrict=None
+            restrict=None,
+            explicit_restrict=ix
         )
         wz = wass_v2(
             uz_norm[iz],
@@ -159,7 +172,8 @@ def create_evaluators(
             kind=kind,
             resolution=resolution,
             store_q=False,
-            restrict=None
+            restrict=None,
+            explicit_restrict=iz
         )
         # ux_pos, ux_neg, ixp, ixn = split_normalize(data_x[i], dt, clip_val=tau)
         # uz_pos, uz_neg, izp, izn = split_normalize(data_z[i], dt, clip_val=tau)
