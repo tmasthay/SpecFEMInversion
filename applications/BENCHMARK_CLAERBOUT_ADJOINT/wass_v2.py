@@ -36,8 +36,8 @@ def split_normalize(f, dx, clip_val=None):
     f_abs = np.abs(f)
     pos = 0.5 * (f_abs + f)
     neg = pos - f
-    pos = pos + clip_val
-    neg = neg + clip_val
+    pos = pos + clip_val * np.max(pos)
+    neg = neg + clip_val * np.max(neg)
 
     start_p, end_p = eff_support(pos, 2 * clip_val)
     start_n, end_n = eff_support(neg, 2 * clip_val)
@@ -151,32 +151,32 @@ def create_evaluators(
                 clip_val=tau
             )
             wx_pos = wass_v2(
-                ux_pos[ixp] / cxp,
-                t[ixp],
+                ux_pos,
+                t,
                 kind=kind,
                 resolution=resolution,
                 store_q=False,
                 restrict=None
             )
             wx_neg = wass_v2(
-                ux_neg[ixn] / cxn,
-                t[ixn],
+                ux_neg,
+                t,
                 kind=kind,
                 resolution=resolution,
                 store_q=False,
                 restrict=None
             )
             wz_pos = wass_v2(
-                uz_pos[izp] / czp,
-                t[izp],
+                uz_pos,
+                t,
                 kind=kind,
                 resolution=resolution,
                 store_q=False,
                 restrict=None
             )
             wz_neg = wass_v2(
-                uz_neg[izn] / czn,
-                t[izn],
+                uz_neg,
+                t,
                 kind=kind,
                 resolution=resolution,
                 store_q=False,
@@ -184,6 +184,7 @@ def create_evaluators(
             )
             evaluators.append([wx_pos, wx_neg, wz_pos, wz_neg])
             if( i < 5 and make_plots):
+                plt.clf()
                 plt.subplot(1,3,1)
                 plt.plot(t, data_x[i], label='rawx', color='blue')
                 plt.plot(
@@ -198,14 +199,14 @@ def create_evaluators(
                 plt.subplot(1,3,2)
                 plt.plot(
                     t[ixp], 
-                    ux_pos[ix], 
+                    ux_pos[ixp], 
                     label='xpos', 
                     linestyle='-', 
                     color='green'
                 )
                 plt.plot(
                     t[ixn], 
-                    ux_neg[iz], 
+                    ux_neg[ixn], 
                     label='xneg', 
                     linestyle='-.', 
                     color='red'
@@ -214,21 +215,20 @@ def create_evaluators(
 
                 plt.subplot(1,3,3)
                 plt.plot(
-                    t[ix],
+                    t[ixp],
                     cumulative_trapezoid(ux_pos[ixp], dx=dt, initial=0.0),
                     label='Windowed CDF xpos', 
                     linestyle='-', 
                     color='green'
                 )
                 plt.plot(
-                    t[iz],
+                    t[ixn],
                     cumulative_trapezoid(ux_neg[ixn], dx=dt, initial=0.0),
                     label='Windowed CDF xneg', 
                     linestyle='-.', 
                     color='red'
                 )
                 plt.savefig('split-%d.pdf'%i)
-            
         elif( version.lower() == 'square' ):
             ux_norm, ix, cx = square_normalize(data_x[i], dt, clip_val=tau)
             uz_norm, iz, cz = square_normalize(data_z[i], dt, clip_val=tau)
@@ -280,10 +280,16 @@ def create_evaluators(
             evaluators.append([wx, wz])
     return evaluators
 
-def get_info(f, dx, tau=None):
-    f_norm, ix = square_normalize(f, dx, clip_val=tau)
-    F = cumulative_trapezoid(f_norm, dx=dx, initial=0.0)
-    return f_norm, F, ix
+def get_info(f, dx, tau=None, version='split'):
+    if( version.lower() == 'split' ):
+        fp, fn, ixp, ixn, cpos, cneg = split_normalize(f, dx=dx, clip_val=tau)
+        Fp = cumulative_trapezoid(fp, dx=dx, initial=0.0)
+        Fn = cumulative_trapezoid(fn, dx=dx, initial=0.0)
+        return fp, fn, Fp, Fn, ixp, ixn, cpos, cneg
+    else:
+        f_norm, ix, c = square_normalize(f, dx, clip_val=tau)
+        F = cumulative_trapezoid(f_norm, dx=dx, initial=0.0)
+        return f_norm, F, ix, c
 
 def wass_landscape(evaluators, **kw):
     tau = kw.get('tau', 0.01)
@@ -295,6 +301,7 @@ def wass_landscape(evaluators, **kw):
     vals = np.zeros((num_shifts,num_shifts))
     
     num_recs = kw.get('num_recs', 501)
+    version = kw.get('version', 'split')
     start_time = time.time()
     for i in range(num_shifts):
         for j in range(num_shifts):
@@ -315,11 +322,44 @@ def wass_landscape(evaluators, **kw):
             uz = hf.read_SU_file(fz)
             s = 0.0
             for k in range(ux.shape[0]):
-                curr_x = evaluators[k][0]
-                curr_z = evaluators[k][1]
-                ux_pdf, ux_cdf, ix = get_info(ux[k], dx=dt, tau=tau)
-                uz_pdf, uz_cdf, ix = get_info(uz[k], dx=dt, tau=tau)
-                vals[i,j] += curr_x(ux_pdf, ux_cdf) + curr_z(uz_pdf, uz_cdf)
+                if( version.lower() == 'split' ):
+                    curr_xp = evaluators[k][0]
+                    curr_xn = evaluators[k][1]
+                    curr_zp = evaluators[k][2]
+                    curr_zn = evaluators[k][3]
+                    uxp_pdf, uxp_cdf, uxn_pdf, uxn_cdf, ixp, ixn = get_info(
+                        ux[k], 
+                        dx=dt, 
+                        tau=tau,
+                        version=version
+                    )
+                    uzp_pdf, uzp_cdf, uzn_pdf, uzn_cdf, izp, izn = get_info(
+                        uz[k], 
+                        dx=dt, 
+                        tau=tau,
+                        version=version
+                    )
+                    v1 = curr_xp(uxp_pdf, uxp_cdf)
+                    v2 = curr_xn(uxn_pdf, uxn_cdf)
+                    v3 = curr_zp(uzp_pdf, uzp_cdf)
+                    v4 = curr_zn(uzn_pdf, uzn_cdf)
+                    vals[i,j] += v1 + v2 + v3 + v4
+                else:
+                    curr_x = evaluators[k][0]
+                    curr_z = evaluators[k][1]
+                    ux_pdf, ux_cdf, ix, cx = get_info(
+                        ux[k], 
+                        dx=dt, 
+                        tau=tau,
+                        version=version
+                    )
+                    uz_pdf, uz_cdf, iz, cz = get_info(
+                        uz[k], 
+                        dx=dt, 
+                        tau=tau,
+                        version=version
+                    )
+                    vals[i,j] += curr_x(ux_pdf, ux_cdf) + curr_z(uz_pdf, uz_cdf)
     return vals
 
 
