@@ -327,13 +327,15 @@ def wass_landscape(evaluators, **kw):
                     curr_xn = evaluators[k][1]
                     curr_zp = evaluators[k][2]
                     curr_zn = evaluators[k][3]
-                    uxp_pdf, uxp_cdf, uxn_pdf, uxn_cdf, ixp, ixn = get_info(
+                    uxp_pdf, uxp_cdf, uxn_pdf, uxn_cdf, ixp, ixn, cxp, cxn = \
+                    get_info(
                         ux[k], 
                         dx=dt, 
                         tau=tau,
                         version=version
                     )
-                    uzp_pdf, uzp_cdf, uzn_pdf, uzn_cdf, izp, izn = get_info(
+                    uzp_pdf, uzp_cdf, uzn_pdf, uzn_cdf, izp, izn, czp, czn = \
+                    get_info(
                         uz[k], 
                         dx=dt, 
                         tau=tau,
