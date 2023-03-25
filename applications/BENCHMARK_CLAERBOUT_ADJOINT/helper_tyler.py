@@ -611,6 +611,8 @@ if( __name__ == "__main__" ):
                         if( args.rerun ):
                             ht.update_source(ex, ez)
                             ht.run_simulator('forward', output_name=folder)
+                            os.system('rm -rf %s'%folder)
+                            os.system('mkdir -p %s'%folder)
                             ht.sco('echo "%d,%d,%.8e,%.8e" > %s/params.txt'%(
                                 i,
                                 j,
