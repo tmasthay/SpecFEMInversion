@@ -611,6 +611,14 @@ if( __name__ == "__main__" ):
                         if( args.rerun ):
                             ht.update_source(ex, ez)
                             ht.run_simulator('forward', output_name=folder)
+                            ht.sco('echo "%d,%d,%.8e,%.8e" > %s/params.txt'%(
+                                i,
+                                j,
+                                ex,
+                                ez,
+                                folder
+                                )
+                            )
                         syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
                         syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
                         os.system('find %s ! -name "*.su" -type f -delete'%(
@@ -642,7 +650,14 @@ if( __name__ == "__main__" ):
             fig, ax = plt.subplots()
             im = ax.imshow(misfits, origin='upper', extent=[a,b,a,b])
             plt.colorbar(im)
-            plt.savefig('%s.pdf'%args.misfit)
+            plt.savefig('%s/%s_%d_%d_%d.pdf'%(
+                ref_folder,
+                args.misfit,
+                N,
+                int(a),
+                int(b)          
+                )
+            )
         elif( mode == 9 ):
             hf = helper()
             x_data = []
