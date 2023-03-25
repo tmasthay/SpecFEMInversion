@@ -609,8 +609,6 @@ if( __name__ == "__main__" ):
                         print('(x,z) = (%f,%f)'%(ex,ez))
                         folder = fldr(i,j)
                         if( args.rerun ):
-                            ht.update_source(ex, ez)
-                            ht.run_simulator('forward', output_name=folder)
                             os.system('rm -rf %s'%folder)
                             os.system('mkdir -p %s'%folder)
                             ht.sco('echo "%d,%d,%.8e,%.8e" > %s/params.txt'%(
@@ -621,6 +619,8 @@ if( __name__ == "__main__" ):
                                 folder
                                 )
                             )
+                            ht.update_source(ex, ez)
+                            ht.run_simulator('forward', output_name=folder)
                         syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
                         syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
                         os.system('find %s ! -name "*.su" -type f -delete'%(
