@@ -464,6 +464,11 @@ if( __name__ == "__main__" ):
             '--subsample',
             default='det,1.0',
             help='Receiver subsampling protocol')
+        parser.add_argument(
+            '--log',
+            default='logger.log',
+            help='logger file'
+        )
         args = parser.parse_args()
         args.subsample = args.subsample.split(',')
         args.subsample[1] = float(args.subsample[1])
@@ -558,6 +563,10 @@ if( __name__ == "__main__" ):
             b = 900    
             sources_x = np.linspace(a, b, N)
             sources_z = np.linspace(a, b, N)
+            ref_x = sources_x[N // 2]
+            ref_z = sources_z[N // 2]
+            print('REF = (%f, %f)'%(ref_x,ref_z))
+            lf = open(args.log, 'w')
             real_no, total_no = ht.rec_discern()
             if( args.recompute ):
                 os.system('rm misfit*.log')
@@ -573,7 +582,7 @@ if( __name__ == "__main__" ):
                 get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace(
                     'x',c))
                 
-                ht.update_source(500.0, 500.0)
+                ht.update_source(ref_x, ref_z)
                 ht.run_simulator('forward', output_name=ref_folder)
                 
                 hf = helper()
@@ -607,6 +616,7 @@ if( __name__ == "__main__" ):
                 for (i,ex) in enumerate(sources_x):
                     for (j,ez) in enumerate(sources_z):
                         print('(x,z) = (%f,%f)'%(ex,ez))
+                        print('(x,z) = (%f,%f)'%(ex,ez), file=lf, flush=True)
                         folder = fldr(i,j)
                         if( args.rerun ):
                             os.system('rm -rf %s'%folder)
