@@ -7,6 +7,7 @@ from helper_functions import helper
 import time
 import pickle
 import matplotlib.pyplot as plt
+from smart_quantile_cython import *
 
 def split_normalize(f, dx):
     f_abs = np.abs(f)
@@ -38,29 +39,33 @@ def cut(n,restrict):
     if( i2 > n ): i2 = n
     return i1,i2
     
-def wass_v2(
+def smart_quantile_peval(
         g,
         x,
-        kind='cubic',
-        resolution=1e-5,
-        store_q=True, 
+        tol=0.0, 
         restrict=None,
         explicit_restrict=None
     ):
     dx = x[1] - x[0]
-    dist_ref = cts_quantile(x,g,kind=kind,resolution=resolution)
-    if( type(explicit_restrict) != None ):
-        idx = explicit_restrict
-    else:
-        i1,i2 = cut(len(x), restrict)
-        idx = range(i1,i2)
-    def helper(f, F):
-        return np.trapz((dist_ref.ppf(F)[idx] - x[idx])**2*f[idx], dx=dx)
-    if( store_q ):
-        return helper, dist_ref
-    else:
-        return helper
-    
+    G = cumulative_trapezoid(g, dx=dx, initial=0.0)
+    def helper(p, tau=tol):
+        return smart_quantile(x, g, G, p, tol)
+    return helper
+
+def wass_v3(
+        g, 
+        x,
+        tol=0.0,
+        restrict=None,
+        explicit_restrict=None
+):
+    q = smart_quantile_peval(g,x,tol,restrict,explicit_restrict)
+    def helper(f, F=None):
+        if( F == None ):
+            F = cumulative_trapezoid(f, dx=x[1]-x[0], initial=0.0)
+        integrand = (q(F,tol) - x)**2*f
+        return np.trapz(integrand, dx=x[1]-x[0])
+        
 def create_evaluators(
         t,
         input_path='convex_reference',

@@ -335,8 +335,7 @@ def wass_landscape(evaluators, **kw):
                         version=version
                     )
                     uzp_pdf, uzp_cdf, uzn_pdf, uzn_cdf, izp, izn, czp, czn = \
-                    
-                    \get_info(
+                    get_info(
                         uz[k], 
                         dx=dt, 
                         tau=tau,
