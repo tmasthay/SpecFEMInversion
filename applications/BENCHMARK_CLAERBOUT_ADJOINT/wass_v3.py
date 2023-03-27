@@ -74,17 +74,18 @@ def create_evaluators(
         **kw
 ):
     hf = helper()
-    kind = kw.get('kind', 'cubic')
-    resolution = kw.get('resolution', 1e-5)
     data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
     data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
     evaluators = []
     dt = t[1] - t[0]
     start_time = time.time()
     num_recs = data_x.shape[0]
-    tau = kw.get('tau', 0.01)
+    tau = kw.get('tau', 0.0)
     version = kw.get('version', 'split')
     make_plots = kw.get('make_plots', False)
+    restrict = kw.get('restrict', None)
+    explicit_restrict = kw.get('explicit_restrict', None)
+
     for i in range(num_recs):
         avg_time = (time.time() - start_time) / max(i,1)
         print('%d/%d ||| ELAPSED: %.2e ||| ETA: %.2e'%(
@@ -98,45 +99,39 @@ def create_evaluators(
         if( version.lower() == 'split' ):
             ux_pos, ux_neg, ixp, ixn, cxp, cxn = split_normalize(
                 data_x[i], 
-                dt, 
-                clip_val=tau
+                dt 
             )
             uz_pos, uz_neg, izp, izn, czp, czn = split_normalize(
                 data_z[i],
-                dt, 
-                clip_val=tau
+                dt
             )
-            wx_pos = wass_v2(
+            wx_pos = wass_v3(
                 ux_pos,
                 t,
-                kind=kind,
-                resolution=resolution,
-                store_q=False,
-                restrict=None
+                tol=tau,
+                restrict=restrict,
+                explicit_restrict=explicit_restrict
             )
-            wx_neg = wass_v2(
+            wx_neg = wass_v3(
                 ux_neg,
                 t,
-                kind=kind,
-                resolution=resolution,
-                store_q=False,
-                restrict=None
+                tol=tau,
+                restrict=restrict,
+                explicit_restrict=explicit_restrict
             )
-            wz_pos = wass_v2(
+            wz_pos = wass_v3(
                 uz_pos,
                 t,
-                kind=kind,
-                resolution=resolution,
-                store_q=False,
-                restrict=None
+                tol=tau,
+                restrict=restrict,
+                explicit_restrict=explicit_restrict
             )
-            wz_neg = wass_v2(
+            wz_neg = wass_v3(
                 uz_neg,
                 t,
-                kind=kind,
-                resolution=resolution,
-                store_q=False,
-                restrict=None
+                tol=tau,
+                restrict=restrict,
+                explicit_restrict=explicit_restrict
             )
             evaluators.append([wx_pos, wx_neg, wz_pos, wz_neg])
             if( i < 5 and make_plots):
@@ -154,15 +149,15 @@ def create_evaluators(
 
                 plt.subplot(1,3,2)
                 plt.plot(
-                    t[ixp], 
-                    ux_pos[ixp], 
+                    t, 
+                    ux_pos, 
                     label='xpos', 
                     linestyle='-', 
                     color='green'
                 )
                 plt.plot(
-                    t[ixn], 
-                    ux_neg[ixn], 
+                    t, 
+                    ux_neg, 
                     label='xneg', 
                     linestyle='-.', 
                     color='red'
@@ -171,23 +166,23 @@ def create_evaluators(
 
                 plt.subplot(1,3,3)
                 plt.plot(
-                    t[ixp],
-                    cumulative_trapezoid(ux_pos[ixp], dx=dt, initial=0.0),
-                    label='Windowed CDF xpos', 
+                    t,
+                    cumulative_trapezoid(ux_pos, dx=dt, initial=0.0),
+                    label='CDF xpos', 
                     linestyle='-', 
                     color='green'
                 )
                 plt.plot(
                     t[ixn],
-                    cumulative_trapezoid(ux_neg[ixn], dx=dt, initial=0.0),
-                    label='Windowed CDF xneg', 
+                    cumulative_trapezoid(ux_neg, dx=dt, initial=0.0),
+                    label='CDF xneg', 
                     linestyle='-.', 
                     color='red'
                 )
                 plt.savefig('split-%d.pdf'%i)
         elif( version.lower() == 'square' ):
-            ux_norm, ix, cx = square_normalize(data_x[i], dt, clip_val=tau)
-            uz_norm, iz, cz = square_normalize(data_z[i], dt, clip_val=tau)
+            ux_norm = square_normalize(data_x[i], dt, clip_val=tau)
+            uz_norm = square_normalize(data_z[i], dt, clip_val=tau)
             if( i < 5 ):
                 plt.subplot(1,3,1)
                 plt.plot(t, data_x[i], label='rawx', color='blue')
@@ -195,43 +190,39 @@ def create_evaluators(
                 plt.legend()
 
                 plt.subplot(1,3,2)
-                plt.plot(t[ix], ux_norm[ix], label='x', linestyle='-', color='green')
-                plt.plot(t[iz], uz_norm[iz], label='z', linestyle='-.', color='red')
+                plt.plot(t, ux_norm, label='x', linestyle='-', color='green')
+                plt.plot(t, uz_norm, label='z', linestyle='-.', color='red')
                 plt.legend()
 
                 plt.subplot(1,3,3)
                 plt.plot(
-                    t[ix],
-                    cumulative_trapezoid(ux_norm[ix], dx=dt, initial=0.0),
+                    t,
+                    cumulative_trapezoid(ux_norm, dx=dt, initial=0.0),
                     label='Windowed CDF x', 
                     linestyle='-', 
                     color='green'
                 )
                 plt.plot(
-                    t[iz],
-                    cumulative_trapezoid(uz_norm[iz], dx=dt, initial=0.0),
+                    t,
+                    cumulative_trapezoid(uz_norm, dx=dt, initial=0.0),
                     label='Windowed CDF z', 
                     linestyle='-.', 
                     color='red'
                 )
                 plt.savefig('square-%d.pdf'%i)
-            wx = wass_v2(
-                ux_norm[ix] / cx,
-                t[ix],
-                kind=kind,
-                resolution=resolution,
-                store_q=False,
-                restrict=None,
-                explicit_restrict=None
+            wx = wass_v3( 
+                ux_norm,
+                t,
+                tol=tau,
+                restrict=restrict,
+                explicit_restrict=explicit_restrict
             )
-            wz = wass_v2(
-                uz_norm[iz] / cz,
-                t[iz],
-                kind=kind,
-                resolution=resolution,
-                store_q=False,
-                restrict=None,
-                explicit_restrict=None
+            wz = wass_v3(
+                uz_norm,
+                t,
+                tol=tau,
+                restrict=restrict,
+                explicit_restrict=explicit_restrict
             )
             evaluators.append([wx, wz])
     return evaluators
@@ -283,42 +274,19 @@ def wass_landscape(evaluators, **kw):
                     curr_xn = evaluators[k][1]
                     curr_zp = evaluators[k][2]
                     curr_zn = evaluators[k][3]
-                    uxp_pdf, uxp_cdf, uxn_pdf, uxn_cdf, ixp, ixn, cxp, cxn = \
-                    get_info(
-                        ux[k], 
-                        dx=dt, 
-                        tau=tau,
-                        version=version
-                    )
-                    uzp_pdf, uzp_cdf, uzn_pdf, uzn_cdf, izp, izn, czp, czn = \
-                    
-                    \get_info(
-                        uz[k], 
-                        dx=dt, 
-                        tau=tau,
-                        version=version
-                    )
-                    v1 = curr_xp(uxp_pdf, uxp_cdf)
-                    v2 = curr_xn(uxn_pdf, uxn_cdf)
-                    v3 = curr_zp(uzp_pdf, uzp_cdf)
-                    v4 = curr_zn(uzn_pdf, uzn_cdf)
+                    uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
+                    uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
+                    v1 = curr_xp(uxp_pdf)
+                    v2 = curr_xn(uxn_pdf)
+                    v3 = curr_zp(uzp_pdf)
+                    v4 = curr_zn(uzn_pdf)
                     vals[i,j] += v1 + v2 + v3 + v4
                 else:
                     curr_x = evaluators[k][0]
                     curr_z = evaluators[k][1]
-                    ux_pdf, ux_cdf, ix, cx = get_info(
-                        ux[k], 
-                        dx=dt, 
-                        tau=tau,
-                        version=version
-                    )
-                    uz_pdf, uz_cdf, iz, cz = get_info(
-                        uz[k], 
-                        dx=dt, 
-                        tau=tau,
-                        version=version
-                    )
-                    vals[i,j] += curr_x(ux_pdf, ux_cdf) + curr_z(uz_pdf, uz_cdf)
+                    ux_pdf = square_normalize(ux[k], dx=dt)
+                    uz_pdf = square_normalize(uz[k], dx=dt)
+                    vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
     return vals
 
 
