@@ -254,45 +254,50 @@ def wass_landscape(evaluators, **kw):
     
     num_recs = kw.get('num_recs', 501)
     version = kw.get('version', 'split')
-    start_time = time.time()
-    for i in range(num_shifts):
-        for j in range(num_shifts):
-            avg_time = (time.time() - start_time) / max(100*i+j,1)
-            print('(%d,%d)/(%d,%d) *** ELAPSED: %.2e *** ETA: %.2e'%(
-                i,
-                j,
-                100,
-                100,
-                avg_time * max(i*100+j,1),
-                avg_time * (num_shifts**2 - (i*100+j))
-                ),
-                flush=True
-            )
-            fx = '%s/Ux_file_single_d.su'%folders[i][j]
-            fz = '%s/Uz_file_single_d.su'%folders[i][j]
-            ux = hf.read_SU_file(fx)
-            uz = hf.read_SU_file(fz)
-            s = 0.0
-            for k in range(ux.shape[0]):
-                if( version.lower() == 'split' ):
-                    curr_xp = evaluators[k][0]
-                    curr_xn = evaluators[k][1]
-                    curr_zp = evaluators[k][2]
-                    curr_zn = evaluators[k][3]
-                    uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
-                    uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
-                    v1 = curr_xp(uxp_pdf)
-                    v2 = curr_xn(uxn_pdf)
-                    v3 = curr_zp(uzp_pdf)
-                    v4 = curr_zn(uzn_pdf)
-                    vals[i,j] += v1 + v2 + v3 + v4
-                else:
-                    curr_x = evaluators[k][0]
-                    curr_z = evaluators[k][1]
-                    ux_pdf = square_normalize(ux[k], dx=dt)
-                    uz_pdf = square_normalize(uz[k], dx=dt)
-                    vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
-    return vals
+    threaded = kw.get('threaded', False)
+
+    if( not threaded ):
+        start_time = time.time()
+        for i in range(num_shifts):
+            for j in range(num_shifts):
+                avg_time = (time.time() - start_time) / max(100*i+j,1)
+                print('(%d,%d)/(%d,%d) *** ELAPSED: %.2e *** ETA: %.2e'%(
+                    i,
+                    j,
+                    100,
+                    100,
+                    avg_time * max(i*100+j,1),
+                    avg_time * (num_shifts**2 - (i*100+j))
+                    ),
+                    flush=True
+                )
+                fx = '%s/Ux_file_single_d.su'%folders[i][j]
+                fz = '%s/Uz_file_single_d.su'%folders[i][j]
+                ux = hf.read_SU_file(fx)
+                uz = hf.read_SU_file(fz)
+                s = 0.0
+                for k in range(ux.shape[0]):
+                    if( version.lower() == 'split' ):
+                        curr_xp = evaluators[k][0]
+                        curr_xn = evaluators[k][1]
+                        curr_zp = evaluators[k][2]
+                        curr_zn = evaluators[k][3]
+                        uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
+                        uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
+                        v1 = curr_xp(uxp_pdf)
+                        v2 = curr_xn(uxn_pdf)
+                        v3 = curr_zp(uzp_pdf)
+                        v4 = curr_zn(uzn_pdf)
+                        vals[i,j] += v1 + v2 + v3 + v4
+                    else:
+                        curr_x = evaluators[k][0]
+                        curr_z = evaluators[k][1]
+                        ux_pdf = square_normalize(ux[k], dx=dt)
+                        uz_pdf = square_normalize(uz[k], dx=dt)
+                        vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+        return vals
+    else:
+        raise ValueError('Not implemented yet')
 
 
     
