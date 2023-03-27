@@ -8,6 +8,8 @@ import time
 import pickle
 import matplotlib.pyplot as plt
 from smart_quantile_cython import *
+from helper_tyler import *
+from concurrent.futures import ThreadPoolExecutor
 
 def split_normalize(f, dx):
     f_abs = np.array(np.abs(f), dtype=np.float32)
@@ -255,49 +257,122 @@ def wass_landscape(evaluators, **kw):
     num_recs = kw.get('num_recs', 501)
     version = kw.get('version', 'split')
     threaded = kw.get('threaded', False)
+    start_time = time.time()
+    for i in range(num_shifts):
+        for j in range(num_shifts):
+            avg_time = (time.time() - start_time) / max(100*i+j,1)
+            print('(%d,%d)/(%d,%d) *** ELAPSED: %.2e *** ETA: %.2e'%(
+                i,
+                j,
+                100,
+                100,
+                avg_time * max(i*100+j,1),
+                avg_time * (num_shifts**2 - (i*100+j))
+                ),
+                flush=True
+            )
+            fx = '%s/Ux_file_single_d.su'%folders[i][j]
+            fz = '%s/Uz_file_single_d.su'%folders[i][j]
+            ux = hf.read_SU_file(fx)
+            uz = hf.read_SU_file(fz)
+            s = 0.0
+            for k in range(ux.shape[0]):
+                if( version.lower() == 'split' ):
+                    curr_xp = evaluators[k][0]
+                    curr_xn = evaluators[k][1]
+                    curr_zp = evaluators[k][2]
+                    curr_zn = evaluators[k][3]
+                    uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
+                    uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
+                    v1 = curr_xp(uxp_pdf)
+                    v2 = curr_xn(uxn_pdf)
+                    v3 = curr_zp(uzp_pdf)
+                    v4 = curr_zn(uzn_pdf)
+                    vals[i,j] += v1 + v2 + v3 + v4
+                else:
+                    curr_x = evaluators[k][0]
+                    curr_z = evaluators[k][1]
+                    ux_pdf = square_normalize(ux[k], dx=dt)
+                    uz_pdf = square_normalize(uz[k], dx=dt)
+                    vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+    return vals
 
-    if( not threaded ):
-        start_time = time.time()
-        for i in range(num_shifts):
-            for j in range(num_shifts):
-                avg_time = (time.time() - start_time) / max(100*i+j,1)
-                print('(%d,%d)/(%d,%d) *** ELAPSED: %.2e *** ETA: %.2e'%(
-                    i,
-                    j,
-                    100,
-                    100,
-                    avg_time * max(i*100+j,1),
-                    avg_time * (num_shifts**2 - (i*100+j))
-                    ),
-                    flush=True
-                )
-                fx = '%s/Ux_file_single_d.su'%folders[i][j]
-                fz = '%s/Uz_file_single_d.su'%folders[i][j]
-                ux = hf.read_SU_file(fx)
-                uz = hf.read_SU_file(fz)
-                s = 0.0
-                for k in range(ux.shape[0]):
-                    if( version.lower() == 'split' ):
-                        curr_xp = evaluators[k][0]
-                        curr_xn = evaluators[k][1]
-                        curr_zp = evaluators[k][2]
-                        curr_zn = evaluators[k][3]
-                        uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
-                        uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
-                        v1 = curr_xp(uxp_pdf)
-                        v2 = curr_xn(uxn_pdf)
-                        v3 = curr_zp(uzp_pdf)
-                        v4 = curr_zn(uzn_pdf)
-                        vals[i,j] += v1 + v2 + v3 + v4
-                    else:
-                        curr_x = evaluators[k][0]
-                        curr_z = evaluators[k][1]
-                        ux_pdf = square_normalize(ux[k], dx=dt)
-                        uz_pdf = square_normalize(uz[k], dx=dt)
-                        vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
-        return vals
+def wass_landscape_threaded(evaluators, **kw):
+    tau = kw.get('tau', 0.01)
+    dt = kw.get('dt', 0.00140)
+    num_shifts = kw.get(
+        'num_shifts',
+        1 + np.max(np.array([e.split('_')[1:] for e in 
+            ht.sco('find . -type d -name "convex_[0-9]*_[0-9]*"', True)],
+            dtype=int)
+        )
+    )
+    if( num_shifts != 101 ):
+        raise ValueError('YOU HAVE A BUG SHOULD BE 101')
+    hf = helper()
+    folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(num_shifts)] \
+        for j in range(num_shifts)]
+    vals = np.zeros((num_shifts,num_shifts))
+    
+    num_recs = kw.get('num_recs', 501)
+    version = kw.get('version', 'split')
+    threaded = kw.get('threaded', False)
+
+    global completed
+    completed = 0
+
+    def wrapper_split(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
+            curr_xp = evaluators[k][0]
+            curr_xn = evaluators[k][1]
+            curr_zp = evaluators[k][2]
+            curr_zn = evaluators[k][3]
+            uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
+            uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
+            v1 = curr_xp(uxp_pdf)
+            v2 = curr_xn(uxn_pdf)
+            v3 = curr_zp(uzp_pdf)
+            v4 = curr_zn(uzn_pdf)
+            vals[i,j] += v1 + v2 + v3 + v4
+        completed += 1
+        return completed
+
+    def wrapper_square(index):
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
+            curr_x = evaluators[k][0]
+            curr_z = evaluators[k][1]
+            ux_pdf = square_normalize(ux[k], dx=dt)
+            uz_pdf = square_normalize(uz[k], dx=dt)
+            vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+        completed += 1
+        return completed
+
+    start_time = time.time()
+    if( version.lower() == 'split' ):
+        exec_function = wrapper_split
     else:
-        raise ValueError('Not implemented yet')
+        exec_function = wrapper_square
+
+    with ThreadPoolExecutor() as executor:
+        # Use a lambda function to pass additional arguments
+        for res in executor.map(exec_function, range(num_shifts**2)):
+            print(res)
+
+    return vals
+
 
 
     
