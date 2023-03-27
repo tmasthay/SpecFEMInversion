@@ -173,7 +173,7 @@ def create_evaluators(
                     color='green'
                 )
                 plt.plot(
-                    t[ixn],
+                    t,
                     cumulative_trapezoid(ux_neg, dx=dt, initial=0.0),
                     label='CDF xneg', 
                     linestyle='-.', 
