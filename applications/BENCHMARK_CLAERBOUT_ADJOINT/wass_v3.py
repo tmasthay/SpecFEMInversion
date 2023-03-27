@@ -248,7 +248,15 @@ def get_info(f, dx, tau=None, version='split'):
 def wass_landscape(evaluators, **kw):
     tau = kw.get('tau', 0.01)
     dt = kw.get('dt', 0.00140)
-    num_shifts = kw.get('num_shifts', 100)
+    num_shifts = kw.get(
+        'num_shifts',
+        1 + np.max(np.array([e.split('_')[1:] for e in 
+            ht.sco('find . -type d -name "convex_[0-9]*_[0-9]*"', True)],
+            dtype=int)
+        )
+    )
+    if( num_shifts != 101 ):
+        raise ValueError('YOU HAVE A BUG SHOULD BE 101')
     hf = helper()
     folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(num_shifts)] \
         for j in range(num_shifts)]
@@ -354,6 +362,20 @@ def wass_landscape_threaded(evaluators, **kw):
         for k in range(ux.shape[0]):
             curr_x = evaluators[k][0]
             curr_z = evaluators[k][1]
+            ux_pdf = square_normalize(ux[k], dx=dt)
+            uz_pdf = square_normalize(uz[k], dx=dt)
+            vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+        completed += 1
+        return completed
+    
+    def wrapper_l2(index):
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
             ux_pdf = square_normalize(ux[k], dx=dt)
             uz_pdf = square_normalize(uz[k], dx=dt)
             vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
