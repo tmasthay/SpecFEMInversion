@@ -375,18 +375,20 @@ def wass_landscape_threaded(evaluators, **kw):
         fz = '%s/Uz_file_single_d.su'%folders[i][j]
         ux = hf.read_SU_file(fx)
         uz = hf.read_SU_file(fz)
-        for k in range(ux.shape[0]):
-            ux_pdf = square_normalize(ux[k], dx=dt)
-            uz_pdf = square_normalize(uz[k], dx=dt)
-            vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+        input_path = 'ELASTIC/convex_reference'
+        data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
+        data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
+        vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
         completed += 1
         return completed
 
     start_time = time.time()
     if( version.lower() == 'split' ):
         exec_function = wrapper_split
-    else:
+    elif( version.lower() == 'square' ):
         exec_function = wrapper_square
+    else:
+        exec_function = wrapper_l2
 
     with ThreadPoolExecutor() as executor:
         # Use a lambda function to pass additional arguments
