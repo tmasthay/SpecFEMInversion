@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from smart_quantile_cython import *
 
 def split_normalize(f, dx):
-    f_abs = np.abs(f)
+    f_abs = np.array(np.abs(f), dtype=np.float32)
     pos = 0.5 * (f_abs + f)
     neg = pos - f
     c_pos = np.trapz(pos, dx=dx)
@@ -22,7 +22,7 @@ def split_normalize(f, dx):
     return pos,neg
     
 def square_normalize(f, dx, clip_val=None):
-    u = f**2
+    u = np.array(f**2, dtype=np.float32)
     c = np.trapz(u,dx=dx)
     return u if c == 0 else u / c
 
@@ -47,7 +47,8 @@ def smart_quantile_peval(
         explicit_restrict=None
     ):
     dx = x[1] - x[0]
-    G = cumulative_trapezoid(g, dx=dx, initial=0.0)
+    x = np.array(x, dtype=np.float32)
+    G = np.array(cumulative_trapezoid(g, dx=dx, initial=0.0), dtype=np.float32)
     def helper(p, tau=tol):
         return smart_quantile(x, g, G, p, tol)
     return helper
@@ -59,10 +60,13 @@ def wass_v3(
         restrict=None,
         explicit_restrict=None
 ):
+    x = np.asarray(x, dtype=np.float32)
+    g = np.asarray(g, dtype=np.float32)
     q = smart_quantile_peval(g,x,tol,restrict,explicit_restrict)
     def helper(f, F=None):
         if( F == None ):
             F = cumulative_trapezoid(f, dx=x[1]-x[0], initial=0.0)
+            F = np.asarray(F, dtype=np.float32)
         integrand = (q(F,tol) - x)**2*f
         return np.trapz(integrand, dx=x[1]-x[0])
     return helper
@@ -85,6 +89,7 @@ def create_evaluators(
     make_plots = kw.get('make_plots', False)
     restrict = kw.get('restrict', None)
     explicit_restrict = kw.get('explicit_restrict', None)
+    flush = kw.get('flush', False)
 
     for i in range(num_recs):
         avg_time = (time.time() - start_time) / max(i,1)
@@ -94,7 +99,7 @@ def create_evaluators(
             avg_time * max(i,1),
             avg_time * (num_recs - i)
             ),
-            flush=True
+            flush=flush
         )
         if( version.lower() == 'split' ):
             ux_pos, ux_neg = split_normalize(

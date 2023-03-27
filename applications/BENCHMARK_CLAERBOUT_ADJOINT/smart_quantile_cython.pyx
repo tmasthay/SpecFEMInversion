@@ -7,7 +7,7 @@
 import numpy as np
 cimport numpy as cnp
 
-def get_flat_subintervals(cnp.ndarray[double, ndim=1] x, double tol=0.0):
+def get_flat_subintervals(cnp.ndarray[float, ndim=1] x, double tol=0.0):
     cdef int i, start, prev, runner, curr
     cdef cnp.ndarray[long, ndim=1] idx = np.where(x <= tol)[0]
     cdef list flat_int = []
@@ -34,10 +34,10 @@ def get_flat_subintervals(cnp.ndarray[double, ndim=1] x, double tol=0.0):
         return [(np.inf, np.inf)]
 
 def smart_quantile(
-        cnp.ndarray[double, ndim=1] x,
-        cnp.ndarray[double, ndim=1] pdf, 
-        cnp.ndarray[double, ndim=1] cdf, 
-        cnp.ndarray[double, ndim=1] p, 
+        cnp.ndarray[float, ndim=1] x,
+        cnp.ndarray[float, ndim=1] pdf, 
+        cnp.ndarray[float, ndim=1] cdf, 
+        cnp.ndarray[float, ndim=1] p, 
         double tol=0.0
 ):
     cdef list flat_int = get_flat_subintervals(pdf)
