@@ -97,11 +97,11 @@ def create_evaluators(
             flush=True
         )
         if( version.lower() == 'split' ):
-            ux_pos, ux_neg, ixp, ixn, cxp, cxn = split_normalize(
+            ux_pos, ux_neg = split_normalize(
                 data_x[i], 
                 dt 
             )
-            uz_pos, uz_neg, izp, izn, czp, czn = split_normalize(
+            uz_pos, uz_neg = split_normalize(
                 data_z[i],
                 dt
             )
