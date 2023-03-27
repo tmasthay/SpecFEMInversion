@@ -65,6 +65,7 @@ def wass_v3(
             F = cumulative_trapezoid(f, dx=x[1]-x[0], initial=0.0)
         integrand = (q(F,tol) - x)**2*f
         return np.trapz(integrand, dx=x[1]-x[0])
+    return helper
         
 def create_evaluators(
         t,
