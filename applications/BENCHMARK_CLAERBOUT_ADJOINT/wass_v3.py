@@ -297,12 +297,18 @@ def wass_landscape(evaluators, **kw):
                     v3 = curr_zp(uzp_pdf)
                     v4 = curr_zn(uzn_pdf)
                     vals[i,j] += v1 + v2 + v3 + v4
-                else:
+                elif( version.lower() == 'square' ):
                     curr_x = evaluators[k][0]
                     curr_z = evaluators[k][1]
                     ux_pdf = square_normalize(ux[k], dx=dt)
                     uz_pdf = square_normalize(uz[k], dx=dt)
                     vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+                else:
+                    input_path = 'ELASTIC/convex_reference'
+                    data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
+                    data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
+                    vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
+
     return vals
 
 def wass_landscape_threaded(evaluators, **kw):
@@ -353,6 +359,7 @@ def wass_landscape_threaded(evaluators, **kw):
         return completed
 
     def wrapper_square(index):
+        global completed
         i = index // num_shifts
         j = np.mod(index, num_shifts)
         fx = '%s/Ux_file_single_d.su'%folders[i][j]
@@ -369,6 +376,7 @@ def wass_landscape_threaded(evaluators, **kw):
         return completed
     
     def wrapper_l2(index):
+        global completed
         i = index // num_shifts
         j = np.mod(index, num_shifts)
         fx = '%s/Ux_file_single_d.su'%folders[i][j]
