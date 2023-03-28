@@ -67,6 +67,7 @@ class ht:
                 elif( len(v) == 2 ):
                     tm = str
                     if( v[0] in type_map.keys() ): tm = type_map[v[0]]
+                    if( tm == float ): v[1] = v[1].replace('d', 'e')
                     if( v[0] in d.keys() ): d[v[0]].append(tm(v[1]))
                     else: d[v[0]] = [tm(v[1])]
             return d
@@ -465,6 +466,11 @@ if( __name__ == "__main__" ):
             default='det,1.0',
             help='Receiver subsampling protocol')
         parser.add_argument(
+            '--ext',
+            default='su',
+            help='Data file extension'
+        )
+        parser.add_argument(
             '--log',
             default='logger.log',
             help='logger file'
@@ -572,8 +578,8 @@ if( __name__ == "__main__" ):
                 os.system('rm misfit*.log')
                 
                 ref_folder = 'convex_reference'
-                x_suffix = 'Ux_file_single_d.su'
-                z_suffix = 'Uz_file_single_d.su'
+                x_suffix = 'Ux_file_single_d.%s'%args.ext
+                z_suffix = 'Uz_file_single_d.%s'%args.ext
                 ref_x_file = '%s/%s'%(ref_folder, x_suffix)
                 ref_z_file = '%s/%s'%(ref_folder, z_suffix)
                 
@@ -587,8 +593,17 @@ if( __name__ == "__main__" ):
                 
                 hf = helper()
                 
-                data_x = hf.read_SU_file(ref_x_file)
-                data_z = hf.read_SU_file(ref_z_file)
+                if( args.ext == 'su' ):
+                    data_x = hf.read_SU_file(ref_x_file)
+                    data_z = hf.read_SU_file(ref_z_file)
+                elif( args.ext == 'bin' ):
+                    # data_x = hf.read_binary_file_custom_real_array(ref_x_file)
+                    # data_z = hf.read_binary_file_custom_real_array(ref_z_file)
+                    data_x = hf.read_SU_file(ref_x_file)
+                    data_z = hf.read_SU_file(ref_z_file)
+                else:
+                    raise ValueError('Data ext "%s" unsupported'%args.ext)
+                
                 data_x = data_x[:real_no]
                 data_z = data_z[:real_no]
                 
