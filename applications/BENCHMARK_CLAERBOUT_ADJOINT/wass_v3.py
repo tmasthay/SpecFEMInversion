@@ -310,7 +310,7 @@ def wass_landscape(evaluators, **kw):
     return vals
 
 def wass_landscape_threaded(evaluators, **kw):
-    tau = kw.get('tau', 0.011)
+    tau = kw.get('tau', 0.01)
     dt = kw.get('dt', 0.00140)
     num_shifts = kw.get(
         'num_shifts',
