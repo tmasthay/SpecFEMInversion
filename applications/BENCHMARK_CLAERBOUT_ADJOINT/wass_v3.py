@@ -255,8 +255,6 @@ def wass_landscape(evaluators, **kw):
             dtype=int)
         )
     )
-    if( num_shifts != 101 ):
-        raise ValueError('YOU HAVE A BUG SHOULD BE 101')
     hf = helper()
     folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(num_shifts)] \
         for j in range(num_shifts)]
@@ -321,8 +319,6 @@ def wass_landscape_threaded(evaluators, **kw):
             dtype=int)
         )
     )
-    if( num_shifts != 101 ):
-        raise ValueError('YOU HAVE A BUG SHOULD BE 101')
     hf = helper()
     folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(num_shifts)] \
         for j in range(num_shifts)]

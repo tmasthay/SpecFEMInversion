@@ -574,8 +574,8 @@ if( __name__ == "__main__" ):
                 ref_folder = 'convex_reference'
                 x_suffix = 'Ux_file_single_d.su'
                 z_suffix = 'Uz_file_single_d.su'
-                ref_x = '%s/%s'%(ref_folder, x_suffix)
-                ref_z = '%s/%s'%(ref_folder, z_suffix)
+                ref_x_file = '%s/%s'%(ref_folder, x_suffix)
+                ref_z_file = '%s/%s'%(ref_folder, z_suffix)
                 
                 prefix = 'convex'
                 fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
@@ -587,8 +587,8 @@ if( __name__ == "__main__" ):
                 
                 hf = helper()
                 
-                data_x = hf.read_SU_file(ref_x)
-                data_z = hf.read_SU_file(ref_z)
+                data_x = hf.read_SU_file(ref_x_file)
+                data_z = hf.read_SU_file(ref_z_file)
                 data_x = data_x[:real_no]
                 data_z = data_z[:real_no]
                 

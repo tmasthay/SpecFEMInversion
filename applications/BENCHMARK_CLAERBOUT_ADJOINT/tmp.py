@@ -5,9 +5,9 @@ import argparse
 t = 0.00140 * np.array(range(1500))
 path = 'ELASTIC/convex_reference'
 tau = 0.0
-version = 'square'
+version = 'l2'
 make_plots = True
-regenerate = False
+regenerate = True
 if( regenerate ):
     evaluators = create_evaluators(
         t, 
@@ -16,7 +16,7 @@ if( regenerate ):
         version=version, 
         make_plots=make_plots
     )
-    threaded = False
+    threaded = True
     if( threaded ):
         u = wass_landscape_threaded(evaluators, version=version)
     else:
