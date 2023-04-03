@@ -45,7 +45,7 @@ NPROC=`grep ^NPROC DATA/Par_file | cut -d = -f 2 | cut -d \# -f 1 | tr -d ' '`
   echo
   echo "running mesher..."
   echo
-  ./xmeshfem2D
+  ./xmeshfem2D 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi
 
@@ -55,7 +55,7 @@ if [ "$NPROC" -eq 1 ]; then
   echo
   echo "running solver..."
   echo
-  ./xspecfem2D
+  ./xspecfem2D extraneous_args
 else
   # This is a MPI simulation
   echo

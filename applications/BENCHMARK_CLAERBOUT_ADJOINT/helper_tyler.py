@@ -599,6 +599,24 @@ class ht:
         os.system('./run_this_example.sh > run.out 2> run.err &')
         os.chdir(reference)
 
+    def purge(done=set([])):
+        if( type(done) == list ): done = set(done)
+        finished_dirs = set(['/'.join(e.split('/')[:-1]) for e in \
+            ht.sco('find $(pwd) -name "*.su"', True)]
+        )
+        new_dirs = finished_dirs.difference(done)
+        for case in new_dirs:
+            go_up = case.replace('/OUTPUT_FILES', '')
+            if( go_up == ht.sco('echo $SPEC_APP', True)[0] ):
+                continue
+            ht.sco('cp %s/DATA/Par_file %s/Par_file.su'%(go_up, go_up))
+            ht.sco('mv %s/*.su %s'%(case, go_up))
+            ht.sco('find %s -type f ! -name "*.su" -exec rm {} +')
+            ht.sco('rm -rf %s'%case)
+            ht.sco('rm -rf %s/DATA'%go_up)
+        return finished_dirs
+
+
 if( __name__ == "__main__" ):
     try:
         parser = argparse.ArgumentParser(
@@ -929,13 +947,15 @@ if( __name__ == "__main__" ):
             )
             orig = left()
             curr = orig
+            done = set([])
             while( curr > 0 ): 
                 print('TOTAL TIME: %.2f...%d/%d remaining'%(
                     time.time() - t,
                     curr,
                     orig)
                 )
-                time.sleep(5)
+                done = ht.purge(done)
+                time.sleep(1)
                 curr = left()
             print('COMPLETE RUN TIME = %.2f'%(time.time() - t_orig))
     except Exception as e:
