@@ -608,6 +608,7 @@ class ht:
         for case in new_dirs:
             go_up = case.replace('/OUTPUT_FILES', '')
             if( go_up == ht.sco('echo $SPEC_APP', True)[0] ):
+                print('SKIPPING "%s"'%go_up)
                 continue
             ht.sco('cp %s/DATA/Par_file %s/Par_file.su'%(go_up, go_up))
             ht.sco('mv %s/*.su %s'%(case, go_up))
