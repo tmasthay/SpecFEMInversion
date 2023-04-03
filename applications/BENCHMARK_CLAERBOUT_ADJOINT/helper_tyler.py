@@ -550,7 +550,7 @@ class ht:
         reference = os.getcwd()
         os.system('mkdir -p %s'%target)
         os.chdir(target)
-        os.system('ln -s %s/*.py'%reference)
+        os.system('ln -s %s/*.py 2> /dev/null'%reference)
         os.system('ln -s %s/run_this_example.sh'%reference)
         os.system('ln -s %s/xmeshfem2D'%reference)
         os.system('ln -s %s/xspecfem2D'%reference)
@@ -612,9 +612,9 @@ class ht:
                 continue
             ht.sco('cp %s/DATA/Par_file %s/Par_file.su'%(go_up, go_up))
             ht.sco('mv %s/*.su %s'%(case, go_up))
-            ht.sco('find %s -type f ! -name "*.su" -exec rm {} +')
             ht.sco('rm -rf %s'%case)
             ht.sco('rm -rf %s/DATA'%go_up)
+            ht.sco('find %s ! -type d ! -name "*.su" -exec rm {} +'%go_up)
         return finished_dirs
 
 
@@ -946,8 +946,11 @@ if( __name__ == "__main__" ):
             left = lambda : len(
                 [e for e in ht.sco('ps', True) if 'xspecfem2D' in e]
             )
-            orig = left()
+            orig = args.num_sources**2 + 1
             curr = orig
+            while( curr == 0 ): 
+                print('Waiting for process delay...')
+                curr = left()
             done = set([])
             while( curr > 0 ): 
                 print('TOTAL TIME: %.2f...%d/%d remaining'%(
@@ -956,8 +959,9 @@ if( __name__ == "__main__" ):
                     orig)
                 )
                 done = ht.purge(done)
-                time.sleep(1)
+                time.sleep(5)
                 curr = left()
+            ht.purge(done)
             print('COMPLETE RUN TIME = %.2f'%(time.time() - t_orig))
     except Exception as e:
         traceback.print_exc()
