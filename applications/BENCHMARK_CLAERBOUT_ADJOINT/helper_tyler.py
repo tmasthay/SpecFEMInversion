@@ -14,6 +14,7 @@ from itertools import product
 import argparse
 import traceback
 import imageio
+import time
 
 class ht:
     def sco(
@@ -541,6 +542,63 @@ class ht:
             int(b_z)          
             )
         )
+
+    def build_execution_folder(**kw):
+        target = kw['target']
+        xs = kw['xs']
+        zs = kw['zs']
+        reference = os.getcwd()
+        os.system('mkdir -p %s'%target)
+        os.chdir(target)
+        os.system('ln -s %s/*.py'%reference)
+        os.system('ln -s %s/run_this_example.sh'%reference)
+        os.system('ln -s %s/xmeshfem2D'%reference)
+        os.system('ln -s %s/xspecfem2D'%reference)
+        os.system('cp -r %s/DATA .'%reference)
+        ht.update_source(xs,zs)
+        os.chdir(reference)
+
+    def build_tree(**kw):
+        os.system('cp DATA/Par_file_ref DATA/Par_file')
+        os.system('cp DATA/SOURCE_REF DATA/SOURCE')
+        N = kw['N']
+        ax = kw['ax']
+        bx = kw['bx']
+        az = kw['az']
+        bz = kw['bz']  
+        sources_x = np.linspace(ax, bx, N)
+        sources_z = np.linspace(az, bz, N)
+        ref_x = sources_x[N // 2]
+        ref_z = sources_z[N // 2]
+        print('REF = (%f, %f)'%(ref_x,ref_z))
+        prefix = 'convex'
+        ref_folder = '%s_reference'%prefix
+        fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
+        
+        ht.build_execution_folder(target=ref_folder, xs=ref_x, zs=ref_z)
+        
+        hf = helper()
+        
+        folders = [ref_folder]
+        for (i,ex) in enumerate(sources_x):
+            for (j,ez) in enumerate(sources_z):
+                print('(x,z) = (%f,%f)'%(ex,ez))
+                folder = fldr(i,j)
+                os.system('rm -rf %s'%folder)
+                os.system('mkdir -p %s'%folder)
+                ht.build_execution_folder(target=folder, xs=ex, zs=ez)
+                folders.append(folder)
+        return folders
+    
+    def execute_node(folder):
+        # print('LAUNCH %s'%folder, file=sys.stderr)
+        # cmd = 'cd %s; ./run_this_example.sh > run.out 2> run.err'%folder
+        # ht.sco(cmd)
+        reference = os.getcwd()
+        os.chdir(folder)
+        os.system('./run_this_example.sh > run.out 2> run.err &')
+        os.chdir(reference)
+
 if( __name__ == "__main__" ):
     try:
         parser = argparse.ArgumentParser(
@@ -591,6 +649,17 @@ if( __name__ == "__main__" ):
             '--store_all',
             action='store_true',
             help='Store all files'
+        )
+        parser.add_argument(
+            '--threaded',
+            action='store_true',
+            help='Run multithreaded version'
+        )
+        parser.add_argument(
+            '--num_threads',
+            default=1,
+            type=int,
+            help='Number of threads'
         )
         args = parser.parse_args()
         
@@ -729,6 +798,7 @@ if( __name__ == "__main__" ):
                 data_x = data_x[indices]
                 data_z = data_z[indices]
                 
+                total_time = 0.0
                 for (i,ex) in enumerate(sources_x):
                     for (j,ez) in enumerate(sources_z):
                         print('(x,z) = (%f,%f)'%(ex,ez))
@@ -746,7 +816,9 @@ if( __name__ == "__main__" ):
                                 )
                             )
                             ht.update_source(ex, ez)
+                            tmp = time.time()
                             ht.run_simulator('forward', output_name=folder)
+                            total_time += time.time() - tmp
                         syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
                         syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
                         if( not args.store_all ):
@@ -791,6 +863,7 @@ if( __name__ == "__main__" ):
                 int(b_z)          
                 )
             )
+            print('TOTAL SERIAL FORWARD: %.2f'%total_time)
         elif( mode == 9 ):
             hf = helper()
             x_data = []
@@ -837,8 +910,34 @@ if( __name__ == "__main__" ):
                     title_seq=lambda j : 'Receiver %d'%j, 
                     verbose=False)
         elif( mode == 10 ):
-            ht.run_convex(args)
-
+            t_orig = time.time()
+            folders = ht.build_tree(
+                N=args.num_sources,
+                ax=1000,
+                bx=3000,
+                az=500,
+                bz=2500
+            )
+            print('Folder build time: %.2f'%(time.time() - t_orig))
+            t = time.time()
+            for folder in folders:
+                ht.execute_node(folder)
+            print('Launch time: %.2f'%(time.time() - t))
+            t = time.time()
+            left = lambda : len(
+                [e for e in ht.sco('ps', True) if 'xspecfem2D' in e]
+            )
+            orig = left()
+            curr = orig
+            while( curr > 0 ): 
+                print('TOTAL TIME: %.2f...%d/%d remaining'%(
+                    time.time() - t,
+                    curr,
+                    orig)
+                )
+                time.sleep(5)
+                curr = left()
+            print('COMPLETE RUN TIME = %.2f'%(time.time() - t_orig))
     except Exception as e:
         traceback.print_exc()
         exit(-1)
