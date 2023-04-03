@@ -18,6 +18,15 @@ SAVE_FORWARD                    = .false.
 
 # parameters concerning partitioning
 NPROC                           = 1              # number of processes
+OMP_NUM_THREADS                 = 2              # number of processes
+OPENBLAS_NUM_THREADS = $OMP_NUM_THREADS
+GOTO_NUM_THREADS = $OMP_NUM_THREADS
+BLIS_NUM_THREADS = $OMP_NUM_THREADS
+MKL_NUM_THREADS = $OMP_NUM_THREADS
+MKL_DYNAMIC = $OMP_NUM_THREADS
+ATLAS_NUM_THREADS = $OMP_NUM_THREADS
+OMPI_MCA_MPI_NUM_THREADS = $OMP_NUM_THREADS
+TBB_NUM_THREADS = $OMP_NUM_THREADS
 
 # time step parameters
 # total number of time steps
@@ -261,7 +270,7 @@ nbmodels                        = 4
 #       To convert one to the other see doc/Qkappa_Qmu_versus_Qp_Qs_relationship_in_2D_plane_strain.pdf and
 #       utils/attenuation/conversion_from_Qkappa_Qmu_to_Qp_Qs_from_Dahlen_Tromp_959_960.f90.
 1 1 2700.d0 3000.d0 1732.051d0 0 0 9999 9999 0 0 0 0 0 0
-2 1 2500.d0 2700.d0 0 0 0 9999 9999 0 0 0 0 0 0
+2 1 2500.d0 2700.d0 1300.0 0 0 9999 9999 0 0 0 0 0 0
 3 1 2200.d0 2500.d0 1443.375d0 0 0 9999 9999 0 0 0 0 0 0
 4 1 2200.d0 2200.d0 1343.375d0 0 0 9999 9999 0 0 0 0 0 0
 

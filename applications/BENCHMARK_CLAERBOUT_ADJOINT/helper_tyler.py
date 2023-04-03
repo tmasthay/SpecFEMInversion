@@ -425,6 +425,122 @@ class ht:
         imageio.mimsave('%s.gif'%name.replace('.gif',''), frames, fps=fps)
         os.system('rm *.png')
 
+    def run_convex(args):
+        os.system('cp DATA/Par_file_ref DATA/Par_file')
+        os.system('cp DATA/SOURCE_REF DATA/SOURCE')
+        nt = par_og['NSTEP'][0]
+        N = args.num_sources
+        a_x = 1000
+        b_x = 3000
+        a_z = 500
+        b_z = 2500   
+        sources_x = np.linspace(a_x, b_x, N)
+        sources_z = np.linspace(a_z, b_z, N)
+        ref_x = sources_x[N // 2]
+        ref_z = sources_z[N // 2]
+        print('REF = (%f, %f)'%(ref_x,ref_z))
+        lf = open(args.log, 'w')
+        real_no, total_no = ht.rec_discern()
+        if( args.recompute ):
+            os.system('rm misfit*.log')
+            
+            ref_folder = 'convex_reference'
+            x_suffix = 'Ux_file_single_d.%s'%args.ext
+            z_suffix = 'Uz_file_single_d.%s'%args.ext
+            ref_x_file = '%s/%s'%(ref_folder, x_suffix)
+            ref_z_file = '%s/%s'%(ref_folder, z_suffix)
+            
+            prefix = 'convex'
+            fldr = lambda i,j: '%s_%d_%d'%(prefix, i,j)
+            get_file = lambda i,j,c: '%s/%s'%(fldr(i,j), x_suffix.replace(
+                'x',c))
+            
+            ht.update_source(ref_x, ref_z)
+            ht.run_simulator('forward', output_name=ref_folder)
+            
+            hf = helper()
+            
+            if( args.ext == 'su' ):
+                data_x = hf.read_SU_file(ref_x_file)
+                data_z = hf.read_SU_file(ref_z_file)
+            elif( args.ext == 'bin' ):
+                # data_x = hf.read_binary_file_custom_real_array(ref_x_file)
+                # data_z = hf.read_binary_file_custom_real_array(ref_z_file)
+                data_x = hf.read_SU_file(ref_x_file)
+                data_z = hf.read_SU_file(ref_z_file)
+            else:
+                raise ValueError('Data ext "%s" unsupported'%args.ext)
+            
+            data_x = data_x[:real_no]
+            data_z = data_z[:real_no]
+            
+            indices = range(real_no)
+            
+            data_x = data_x[indices]
+            data_z = data_z[indices]
+            
+            for (i,ex) in enumerate(sources_x):
+                for (j,ez) in enumerate(sources_z):
+                    print('(x,z) = (%f,%f)'%(ex,ez))
+                    print('(x,z) = (%f,%f)'%(ex,ez), file=lf, flush=True)
+                    folder = fldr(i,j)
+                    if( args.rerun ):
+                        os.system('rm -rf %s'%folder)
+                        os.system('mkdir -p %s'%folder)
+                        ht.sco('echo "%d,%d,%.8e,%.8e" > %s/params.txt'%(
+                            i,
+                            j,
+                            ex,
+                            ez,
+                            folder
+                            )
+                        )
+                        ht.update_source(ex, ez)
+                        ht.run_simulator('forward', output_name=folder)
+                    syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
+                    syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
+                    if( not args.store_all ):
+                        os.system(
+                            'find %s ! -name "*.su" -type f -delete'%(
+                                folder)
+                        )
+                    eval_misfit(
+                        syn_x,
+                        data_x,
+                        nt,
+                        mode=args.misfit, 
+                        output='misfitx.log',
+                        omit_after=real_no,
+                        restrict=args.restrict)
+                    eval_misfit(
+                        syn_z,
+                        data_z,
+                        nt,
+                        mode=args.misfit,
+                        output='misfitz.log',
+                        omit_after=real_no,
+                        restrict=args.restrict)
+        misfit_x = np.array(
+            ht.read_close('misfitx.log').split('\n')[:-1],
+            dtype=float)
+        misfit_z = np.array(
+            ht.read_close('misfitz.log').split('\n')[:-1],
+            dtype=float)
+        misfits = misfit_x + misfit_z
+        misfits = misfits.reshape((N,N))
+        fig, ax = plt.subplots()
+        im = ax.imshow(misfits, origin='upper', extent=[a_x,b_x,a_z,b_z])
+        plt.colorbar(im)
+        plt.savefig('%s/%s_%d_%d_%d_%d_%d.pdf'%(
+            ref_folder,
+            args.misfit,
+            N,
+            int(a_x),
+            int(b_x),
+            int(a_z),
+            int(b_z)          
+            )
+        )
 if( __name__ == "__main__" ):
     try:
         parser = argparse.ArgumentParser(
@@ -462,10 +578,6 @@ if( __name__ == "__main__" ):
             type=float,
             help='Wasserstein restriction')
         parser.add_argument(
-            '--subsample',
-            default='det,1.0',
-            help='Receiver subsampling protocol')
-        parser.add_argument(
             '--ext',
             default='su',
             help='Data file extension'
@@ -475,9 +587,12 @@ if( __name__ == "__main__" ):
             default='logger.log',
             help='logger file'
         )
+        parser.add_argument(
+            '--store_all',
+            action='store_true',
+            help='Store all files'
+        )
         args = parser.parse_args()
-        args.subsample = args.subsample.split(',')
-        args.subsample[1] = float(args.subsample[1])
         
         mode = args.mode
         
@@ -565,10 +680,12 @@ if( __name__ == "__main__" ):
             os.system('cp DATA/SOURCE_REF DATA/SOURCE')
             nt = par_og['NSTEP'][0]
             N = args.num_sources
-            a = 100
-            b = 900    
-            sources_x = np.linspace(a, b, N)
-            sources_z = np.linspace(a, b, N)
+            a_x = 1000
+            b_x = 3000
+            a_z = 500
+            b_z = 2500   
+            sources_x = np.linspace(a_x, b_x, N)
+            sources_z = np.linspace(a_z, b_z, N)
             ref_x = sources_x[N // 2]
             ref_z = sources_z[N // 2]
             print('REF = (%f, %f)'%(ref_x,ref_z))
@@ -608,22 +725,6 @@ if( __name__ == "__main__" ):
                 data_z = data_z[:real_no]
                 
                 indices = range(real_no)
-                if(     type(args.subsample[1]) == float \
-                        and args.subsample[1] < 1.0):
-                    downsample = int(real_no * args.subsample[1])
-                    if( args.subsample[0] == 'random' ):
-                        indices = np.random.choice(
-                            indices,
-                            downsample,
-                            replace=False)
-                    elif( args.subsample[0] == 'det' ):
-                        indices = list(indices)[::real_no // downsample]
-                    else:
-                        raise ValueError(
-                            'Mode %s not supported'%(
-                                args.subsample[0]))
-                elif( type(args.subsample[1]) == str ):
-                    indices = np.load(args.subsample[1])
                 
                 data_x = data_x[indices]
                 data_z = data_z[indices]
@@ -648,8 +749,11 @@ if( __name__ == "__main__" ):
                             ht.run_simulator('forward', output_name=folder)
                         syn_x = hf.read_SU_file(get_file(i,j,'x'))[indices]
                         syn_z = hf.read_SU_file(get_file(i,j,'z'))[indices]
-                        os.system('find %s ! -name "*.su" -type f -delete'%(
-                            folder))
+                        if( not args.store_all ):
+                            os.system(
+                                'find %s ! -name "*.su" -type f -delete'%(
+                                    folder)
+                            )
                         eval_misfit(
                             syn_x,
                             data_x,
@@ -675,14 +779,16 @@ if( __name__ == "__main__" ):
             misfits = misfit_x + misfit_z
             misfits = misfits.reshape((N,N))
             fig, ax = plt.subplots()
-            im = ax.imshow(misfits, origin='upper', extent=[a,b,a,b])
+            im = ax.imshow(misfits, origin='upper', extent=[a_x,b_x,a_z,b_z])
             plt.colorbar(im)
-            plt.savefig('%s/%s_%d_%d_%d.pdf'%(
+            plt.savefig('%s/%s_%d_%d_%d_%d_%d.pdf'%(
                 ref_folder,
                 args.misfit,
                 N,
-                int(a),
-                int(b)          
+                int(a_x),
+                int(b_x),
+                int(a_z),
+                int(b_z)          
                 )
             )
         elif( mode == 9 ):
@@ -730,6 +836,9 @@ if( __name__ == "__main__" ):
                     'z_traces_%s.gif'%src_order[i],
                     title_seq=lambda j : 'Receiver %d'%j, 
                     verbose=False)
+        elif( mode == 10 ):
+            ht.run_convex(args)
+
     except Exception as e:
         traceback.print_exc()
         exit(-1)
