@@ -27,8 +27,12 @@ cd $currentdir
 
 # links executables
 rm -f xmeshfem2D xspecfem2D
-ln -s bin/xmeshfem2D
-ln -s bin/xspecfem2D
+ln -s $SPEC/bin/xmeshfem2D
+ln -s $SPEC/bin/xspecfem2D
+
+#link change simulation type
+rm -f change_simulation_type.pl
+ln -s $SPEC/utils/change_simulation_type.pl
 
 # stores setup
 cp DATA/Par_file OUTPUT_FILES/
