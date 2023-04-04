@@ -25,7 +25,7 @@ class ht:
         if( split_output ):
             s = [e for e in s.split('\n') if e != '']
         return s
-    
+        
     def read_close(
             filename
             ):
@@ -606,13 +606,15 @@ class ht:
         )
         new_dirs = finished_dirs.difference(done)
         for case in new_dirs:
+            if( not os.path.exists('%s/OUTPUT_FILES') ):
+                continue
             go_up = case.replace('/OUTPUT_FILES', '')
             if( go_up == ht.sco('echo $SPEC_APP', True)[0] ):
                 print('SKIPPING "%s"'%go_up)
                 continue
             if( save_param ):
-                ht.sco('mv -n %s/DATA/Par_file %s/Par_file.su'%(go_up, go_up))
-                ht.sco('mv -n %s/DATA/SOURCE %s/SOURCE.su'%(go_up, go_up))
+                ht.sco('mv -n %s/DATA/Par_file %s/SOURCE.su'%(go_up, go_up))
+                ht.sco('mv -n %s/DATA/Par_file %s/SOURCE.su'%(go_up, go_up))
             ht.sco('mv -n %s/*.su %s'%(case, go_up))
             ht.sco('rm -rf %s'%case)
             ht.sco('rm -rf %s/DATA'%go_up)
