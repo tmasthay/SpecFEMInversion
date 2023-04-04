@@ -960,7 +960,7 @@ if( __name__ == "__main__" ):
                     purge_tmp = time.time()
                     done = ht.purge(done, save_param)
                     purge_time += time.time() - purge_tmp
-            print('Launch time: %.2f'%(time.time() - t - purge_tmp))
+            print('Launch time: %.2f'%(time.time() - t - purge_time))
             print('Purge time: %.2f'%purge_time)
             t = time.time()
             left = lambda : len(
