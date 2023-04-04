@@ -179,7 +179,7 @@ SU_FORMAT                       = .true.        # output single precision binary
 use_existing_STATIONS           = .false.
 
 # number of receiver sets (i.e. number of receiver lines to create below)
-nreceiversets                   = 2
+nreceiversets                   = 1
 
 # orientation
 anglerec                        = 0.d0           # angle to rotate components at receivers
