@@ -673,9 +673,15 @@ if( __name__ == "__main__" ):
         )
         parser.add_argument(
             '--max_proc',
-            default=5,
+            default=16,
             type=int,
             help='Max number of spawned processes at one time'
+        )
+        parser.add_argument(
+            '--purge_interval',
+            default=100,
+            type=int,
+            help='Every purge_interval steps, extra files eliminated'
         )
         args = parser.parse_args()
         
@@ -936,6 +942,10 @@ if( __name__ == "__main__" ):
             )
             print('Folder build time: %.2f'%(time.time() - t_orig))
             max_proc = args.max_proc
+            done = set([])
+            save_param = False
+            purge_interval = args.purge_interval
+            purge_time = 0.0
             t = time.time()
             for (i,folder) in enumerate(folders):
                 if( np.mod(i+1, max_proc) == 0 ):
@@ -943,7 +953,12 @@ if( __name__ == "__main__" ):
                     print('(batch,global)=(%d,%d)'%(i//max_proc,i))
                 else:
                     ht.execute_node(folder, '&')
-            print('Launch time: %.2f'%(time.time() - t))
+                if( np.mod(i+1, purge_interval) == 0 ):
+                    purge_tmp = time.time()
+                    done = ht.purge(done, save_param)
+                    purge_time += time.time() - purge_tmp
+            print('Launch time: %.2f'%(time.time() - t - purge_tmp))
+            print('Purge time: %.2f'%purge_time)
             t = time.time()
             left = lambda : len(
                 [e for e in ht.sco('ps', True) if 'xspecfem2D' in e]
@@ -953,8 +968,6 @@ if( __name__ == "__main__" ):
             while( curr == 0 ): 
                 print('Waiting for process delay...')
                 curr = left()
-            done = set([])
-            save_param = False
             while( curr > 0 ): 
                 print('TOTAL TIME: %.2f...%d/%d remaining'%(
                     time.time() - t,
