@@ -605,12 +605,13 @@ class ht:
             ht.sco('find $(pwd) -name "*.su"', True)]
         )
         new_dirs = finished_dirs.difference(done)
+        mother_dir = ht.sco('echo "$SPEC_APP"', True)[0]
         for case in new_dirs:
-            if( not os.path.exists('%s/OUTPUT_FILES') ):
-                continue
             go_up = case.replace('/OUTPUT_FILES', '')
-            if( go_up == ht.sco('echo $SPEC_APP', True)[0] ):
-                print('SKIPPING "%s"'%go_up)
+            if( 
+                go_up == mother_dir or \
+                not os.path.exists('%s/OUTPUT_FILES'%go_up) 
+            ):
                 continue
             if( save_param ):
                 ht.sco('mv -n %s/DATA/Par_file %s/SOURCE.su'%(go_up, go_up))
