@@ -590,16 +590,16 @@ class ht:
                 folders.append(folder)
         return folders
     
-    def execute_node(folder):
+    def execute_node(folder, c='&'):
         # print('LAUNCH %s'%folder, file=sys.stderr)
         # cmd = 'cd %s; ./run_this_example.sh > run.out 2> run.err'%folder
         # ht.sco(cmd)
         reference = os.getcwd()
         os.chdir(folder)
-        os.system('./run_this_example.sh > run.out 2> run.err &')
+        os.system('./run_this_example.sh > run.out 2> run.err %s'%c)
         os.chdir(reference)
 
-    def purge(done=set([])):
+    def purge(done=set([]), save_param=False):
         if( type(done) == list ): done = set(done)
         finished_dirs = set(['/'.join(e.split('/')[:-1]) for e in \
             ht.sco('find $(pwd) -name "*.su"', True)]
@@ -610,8 +610,10 @@ class ht:
             if( go_up == ht.sco('echo $SPEC_APP', True)[0] ):
                 print('SKIPPING "%s"'%go_up)
                 continue
-            ht.sco('cp %s/DATA/Par_file %s/Par_file.su'%(go_up, go_up))
-            ht.sco('mv %s/*.su %s'%(case, go_up))
+            if( save_param ):
+                ht.sco('mv -n %s/DATA/Par_file %s/Par_file.su'%(go_up, go_up))
+                ht.sco('mv -n %s/DATA/SOURCE %s/SOURCE.su'%(go_up, go_up))
+            ht.sco('mv -n %s/*.su %s'%(case, go_up))
             ht.sco('rm -rf %s'%case)
             ht.sco('rm -rf %s/DATA'%go_up)
             ht.sco('find %s ! -type d ! -name "*.su" -exec rm {} +'%go_up)
@@ -670,15 +672,10 @@ if( __name__ == "__main__" ):
             help='Store all files'
         )
         parser.add_argument(
-            '--threaded',
-            action='store_true',
-            help='Run multithreaded version'
-        )
-        parser.add_argument(
-            '--num_threads',
-            default=1,
+            '--max_proc',
+            default=5,
             type=int,
-            help='Number of threads'
+            help='Max number of spawned processes at one time'
         )
         args = parser.parse_args()
         
@@ -938,9 +935,14 @@ if( __name__ == "__main__" ):
                 bz=2500
             )
             print('Folder build time: %.2f'%(time.time() - t_orig))
+            max_proc = args.max_proc
             t = time.time()
-            for folder in folders:
-                ht.execute_node(folder)
+            for (i,folder) in enumerate(folders):
+                if( np.mod(i+1, max_proc) == 0 ):
+                    ht.execute_node(folder, '')
+                    print('(batch,global)=(%d,%d)'%(i//max_proc,i))
+                else:
+                    ht.execute_node(folder, '&')
             print('Launch time: %.2f'%(time.time() - t))
             t = time.time()
             left = lambda : len(
@@ -952,16 +954,23 @@ if( __name__ == "__main__" ):
                 print('Waiting for process delay...')
                 curr = left()
             done = set([])
+            save_param = False
             while( curr > 0 ): 
                 print('TOTAL TIME: %.2f...%d/%d remaining'%(
                     time.time() - t,
                     curr,
                     orig)
                 )
-                done = ht.purge(done)
+                try:
+                    done = ht.purge(done, save_param)
+                except:
+                    print('Something wrong in purge')
                 time.sleep(5)
                 curr = left()
-            ht.purge(done)
+            try:
+                ht.purge(done, save_param)
+            except:
+                print('Double check that nothing went wrong lol')
             print('COMPLETE RUN TIME = %.2f'%(time.time() - t_orig))
     except Exception as e:
         traceback.print_exc()
