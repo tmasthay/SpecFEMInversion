@@ -312,6 +312,7 @@ def wass_landscape(evaluators, **kw):
 def wass_landscape_threaded(evaluators, **kw):
     tau = kw.get('tau', 0.01)
     dt = kw.get('dt', 0.00140)
+    path = kw.get('path', ht.sco('echo "$SPEC_APP"', True)[0])
     num_shifts = kw.get(
         'num_shifts',
         1 + np.max(np.array([e.split('_')[1:] for e in 
@@ -320,7 +321,7 @@ def wass_landscape_threaded(evaluators, **kw):
         )
     )
     hf = helper()
-    folders = [['ELASTIC/convex_%d_%d'%(i,j) for i in range(num_shifts)] \
+    folders = [['%s/convex_%d_%d'%(path,i,j) for i in range(num_shifts)] \
         for j in range(num_shifts)]
     vals = np.zeros((num_shifts,num_shifts))
     
@@ -379,7 +380,7 @@ def wass_landscape_threaded(evaluators, **kw):
         fz = '%s/Uz_file_single_d.su'%folders[i][j]
         ux = hf.read_SU_file(fx)
         uz = hf.read_SU_file(fz)
-        input_path = 'ELASTIC/convex_reference'
+        input_path = '%s/convex_reference'%path
         data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
         data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
         vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)

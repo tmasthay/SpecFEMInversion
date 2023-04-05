@@ -15,6 +15,7 @@ import argparse
 import traceback
 import imageio
 import time
+from wass_v3 import *
 
 class ht:
     def sco(
@@ -988,6 +989,41 @@ if( __name__ == "__main__" ):
             except:
                 print('Double check that nothing went wrong lol')
             print('COMPLETE RUN TIME = %.2f'%(time.time() - t_orig))
+        elif( mode == 11 ):
+            p_data = ht.par_pull()
+            dt = p_data['DT'][0]
+            nt = p_data['NSTEP'][0]
+            ref_path = 'convex_reference'
+            tau = 0.0
+            os.chdir('..')
+            from wass_v3 import *
+            os.chdir('ELASTIC')
+            t = dt * np.array(range(nt))
+            if( args.recompute ):
+                evaluators = create_evaluators(
+                    t,
+                    ref_path,
+                    tau=tau,
+                    version=args.misfit,
+                    make_plots=True
+                )
+                u = wass_landscape_threaded(evaluators, version=args.misfit)
+                np.save('%s_landscape.npy'%args.misfit, u)
+            else:
+                u = np.load('%s_landscape.npy'%args.misfit)
+            plt.clf()
+            plt.rcParams['text.usetex'] = True 
+            plt.imshow(u, extent=[100,900,100,900], cmap='jet')
+            if( args.misfit == 'l2' ):
+                plt.title(r'$L^2$')
+            elif( args.misfit == 'split' ):
+                plt.title(r'Split Renormalized $W_2^2$')
+            else:
+                plt.title(r'Square Renormalized $W_2^2$')
+            plt.xlabel('Horizontal Distance (km)')
+            plt.ylabel('Depth (km)')
+            plt.colorbar()
+            plt.savefig('%s_landscape.pdf'%args.misfit)
     except Exception as e:
         traceback.print_exc()
         exit(-1)
