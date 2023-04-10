@@ -10,6 +10,23 @@ import matplotlib.pyplot as plt
 from smart_quantile_cython import *
 from helper_tyler import *
 from concurrent.futures import ThreadPoolExecutor
+import sys
+
+def sobolev_norm(f, s=0, **kw):
+    ot = kw['ot']
+    dt = kw['dt']
+    nt = kw['nt']
+    xi = np.fft.fftfreq(nt, d=dt)
+    f_hat = np.exp(-2j * np.pi * ot * xi) * np.fft.fft(f) * dt
+
+    xi = np.fft.fftshift(xi)
+    f_hat = np.fft.fftshift(f_hat)
+    g = (1 + np.abs(xi)**2)**s * np.abs(f_hat)**2
+    dxi = xi[1] - xi[0]
+    res = np.trapz(g, dx=dxi)
+    # print('resshape = %s'%res.shape, file=sys.stderr)
+    print('g = %s'%g.shape, file=sys.stderr)
+    return res
 
 def split_normalize(f, dx):
     f_abs = np.array(np.abs(f), dtype=np.float32)
@@ -92,6 +109,11 @@ def create_evaluators(
     restrict = kw.get('restrict', None)
     explicit_restrict = kw.get('explicit_restrict', None)
     flush = kw.get('flush', False)
+    s = kw.get('s', 0.0)
+    ot = kw.get('ot', 0.0)
+    dt = kw.get('dt', 0.1)
+    nt = kw.get('nt', 101)
+    S = lambda g : lambda h : sobolev_norm(g-h, s=s, ot=ot, dt=dt, nt=nt)
 
     for i in range(num_recs):
         avg_time = (time.time() - start_time) / max(i,1)
@@ -232,6 +254,10 @@ def create_evaluators(
                 explicit_restrict=explicit_restrict
             )
             evaluators.append([wx, wz])
+        elif( version.lower() == 'sobolev' ):
+            evaluators.append([S(data_x[i]), S(data_z[i])])
+        else:
+            raise ValueError('Mode "%s" not supported'%version)
     return evaluators
 
 def get_info(f, dx, tau=None, version='split'):
@@ -301,11 +327,20 @@ def wass_landscape(evaluators, **kw):
                     ux_pdf = square_normalize(ux[k], dx=dt)
                     uz_pdf = square_normalize(uz[k], dx=dt)
                     vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
-                else:
+                elif( version.lower() == 'l2' ):
                     input_path = 'ELASTIC/convex_reference'
                     data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
                     data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
                     vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
+                elif( version.lower() == 'sobolev' ):
+                    fx = lambda g : sobolev_norm(
+                        data_x[i] - g,
+                        s=s,
+                        ot=ot,
+                        dt=dt,
+                        nt=nt
+                    )
+
 
     return vals
 
@@ -386,20 +421,40 @@ def wass_landscape_threaded(evaluators, **kw):
         vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
         completed += 1
         return completed
+    
+    def wrapper_sobolev(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
+            curr_x = evaluators[k][0]
+            curr_z = evaluators[k][1]
+            print(curr_x(ux).shape, file=sys.stderr)
+            vals[i,j] += curr_x(ux) + curr_z(uz)
+        completed += 1
+        return completed
 
     start_time = time.time()
     if( version.lower() == 'split' ):
         exec_function = wrapper_split
     elif( version.lower() == 'square' ):
         exec_function = wrapper_square
-    else:
+    elif( version.lower() == 'l2' ):
         exec_function = wrapper_l2
+    elif( version.lower() == 'sobolev' ):
+        exec_function = wrapper_sobolev
+    else:
+        raise ValueError('Version "%s" not supported'%version)
 
     with ThreadPoolExecutor() as executor:
         # Use a lambda function to pass additional arguments
         for res in executor.map(exec_function, range(num_shifts**2)):
             print(res)
-
+    print('TOTAL TIME: %f'%(time.time() - start_time))
     return vals
 
 

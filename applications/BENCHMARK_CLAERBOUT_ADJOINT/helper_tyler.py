@@ -687,13 +687,20 @@ if( __name__ == "__main__" ):
             type=int,
             help='Every purge_interval steps, extra files eliminated'
         )
+        parser.add_argument(
+            '--s',
+            default=0.0,
+            type=float,
+            help='Sobolev smoothing parameter'
+        )
         args = parser.parse_args()
         
         mode = args.mode
         
         print('Run case: %s'%str(args))
-        src_og = ht.src_pull()
-        par_og = ht.par_pull()
+        pull_dir = 'DATA' if 'ELASTIC' in os.getcwd() else 'ELASTIC/DATA'
+        src_og = ht.src_pull(pull_dir + '/SOURCE')
+        par_og = ht.par_pull(pull_dir + '/Par_file_ref')
 
         if( mode == 1 ):
             ht.create_ricker_time_derivative('ELASTIC/DATA')
@@ -990,12 +997,13 @@ if( __name__ == "__main__" ):
                 print('Double check that nothing went wrong lol')
             print('COMPLETE RUN TIME = %.2f'%(time.time() - t_orig))
         elif( mode == 11 ):
-            p_data = ht.par_pull()
+            p_data = par_og
             dt = p_data['DT'][0]
             nt = p_data['NSTEP'][0]
             ref_path = 'convex_reference'
             tau = 0.0
-            os.chdir('..')
+            if( 'ELASTIC' in os.getcwd() ):
+                os.chdir('..')
             from wass_v3 import *
             os.chdir('ELASTIC')
             t = dt * np.array(range(nt))
@@ -1005,10 +1013,18 @@ if( __name__ == "__main__" ):
                     ref_path,
                     tau=tau,
                     version=args.misfit,
-                    make_plots=True
+                    make_plots=True,
+                    ot=0.0,
+                    dt=dt,
+                    nt=nt,
+                    s = args.s
                 )
                 u = wass_landscape_threaded(evaluators, version=args.misfit)
-                np.save('%s_landscape.npy'%args.misfit, u)
+                if( args.misfit != 'sobolev' ):
+                    np.save('%s_landscape.npy'%args.misfit, u)
+                else:
+                    nsob = ht.sco('find . -name sobolev*.npy', True)[0]
+                    np.save('%s_%d_landscape.npy'%(args.misfit,nsob), u)
             else:
                 u = np.load('%s_landscape.npy'%args.misfit)
             plt.clf()
@@ -1018,8 +1034,12 @@ if( __name__ == "__main__" ):
                 plt.title(r'$L^2$')
             elif( args.misfit == 'split' ):
                 plt.title(r'Split Renormalized $W_2^2$')
-            else:
+            elif( args.misfit == 'square' ):
                 plt.title(r'Square Renormalized $W_2^2$')
+            elif( args.misfit == 'sobolev' ):
+                rfmt = ('%.2e'%args.s).replace('e', r'\times 10^{') + '}'
+                rfmt = rfmt.replace('+0', '+').replace('-0', '-')
+                plt.title(r'Sobolev $s=%s$'%rfmt)
             plt.xlabel('Horizontal Distance (km)')
             plt.ylabel('Depth (km)')
             plt.colorbar()
