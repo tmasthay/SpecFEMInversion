@@ -24,8 +24,6 @@ def sobolev_norm(f, s=0, **kw):
     g = (1 + np.abs(xi)**2)**s * np.abs(f_hat)**2
     dxi = xi[1] - xi[0]
     res = np.trapz(g, dx=dxi)
-    # print('resshape = %s'%res.shape, file=sys.stderr)
-    print('g = %s'%g.shape, file=sys.stderr)
     return res
 
 def split_normalize(f, dx):
@@ -433,8 +431,7 @@ def wass_landscape_threaded(evaluators, **kw):
         for k in range(ux.shape[0]):
             curr_x = evaluators[k][0]
             curr_z = evaluators[k][1]
-            print(curr_x(ux).shape, file=sys.stderr)
-            vals[i,j] += curr_x(ux) + curr_z(uz)
+            vals[i,j] += curr_x(ux[k]) + curr_z(uz[k])
         completed += 1
         return completed
 
