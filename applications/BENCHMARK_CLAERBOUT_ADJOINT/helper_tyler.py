@@ -1023,7 +1023,7 @@ if( __name__ == "__main__" ):
                 if( args.misfit != 'sobolev' ):
                     np.save('%s_landscape.npy'%args.misfit, u)
                 else:
-                    nsob = ht.sco('find . -name sobolev*.npy', True)[0]
+                    nsob = len(ht.sco('find . -name sobolev*.npy', True))
                     np.save('%s_%d_landscape.npy'%(args.misfit,nsob), u)
             else:
                 u = np.load('%s_landscape.npy'%args.misfit)
