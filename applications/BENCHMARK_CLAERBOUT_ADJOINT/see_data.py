@@ -30,6 +30,7 @@ k = 0
 t_min = 0.0
 t_max = 1600 * 1.1e-3
 
+#dummy to make merge easier
 total_tasks = x_max * z_max
 img = plt.imread('Velocity.jpg')
 t = time.time()
