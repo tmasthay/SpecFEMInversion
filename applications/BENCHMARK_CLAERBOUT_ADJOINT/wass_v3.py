@@ -43,6 +43,16 @@ def square_normalize(f, dx, clip_val=None):
     c = np.trapz(u,dx=dx)
     return u if c == 0 else u / c
 
+def shift_normalize(f, dx):
+    c = np.min(f)
+    if( c < 0 ):
+        f = f + np.abs(c)
+    c2 = np.trapz(f, dx=dx)
+    if( c2 > 0 ):
+        return f / c2
+    else:
+        return f
+
 def cut(n,restrict):
     if( type(restrict) == type(None) ):
         return 0,n
@@ -253,7 +263,17 @@ def create_evaluators(
             )
             evaluators.append([wx, wz])
         elif( version.lower() == 'sobolev' ):
-            evaluators.append([S(data_x[i]), S(data_z[i])])
+            ux_cdf = cumulative_trapezoid(
+                shift_normalize(data_x[i], dx=dt),
+                dx=dt,
+                initial=0.0
+            )
+            uz_cdf = cumulative_trapezoid(
+                shift_normalize(data_z[i], dx=dt),
+                dx=dt,
+                initial=0.0
+            )
+            evaluators.append([S(ux_cdf), S(uz_cdf)])
         else:
             raise ValueError('Mode "%s" not supported'%version)
     return evaluators
@@ -358,9 +378,9 @@ def wass_landscape_threaded(evaluators, **kw):
         for j in range(num_shifts)]
     vals = np.zeros((num_shifts,num_shifts))
     
-    num_recs = kw.get('num_recs', 501)
+    # num_recs = kw.get('num_recs', 501)
     version = kw.get('version', 'split')
-    threaded = kw.get('threaded', False)
+    # threaded = kw.get('threaded', False)
 
     global completed
     completed = 0
@@ -431,7 +451,11 @@ def wass_landscape_threaded(evaluators, **kw):
         for k in range(ux.shape[0]):
             curr_x = evaluators[k][0]
             curr_z = evaluators[k][1]
-            vals[i,j] += curr_x(ux[k]) + curr_z(uz[k])
+            ux_pdf = shift_normalize(ux[k], dx=dt)
+            uz_pdf = shift_normalize(uz[k], dx=dt)
+            ux_cdf = cumulative_trapezoid(ux_pdf, dx=dt, initial=0)
+            uz_cdf = cumulative_trapezoid(uz_pdf, dx=dt, initial=0)
+            vals[i,j] += curr_x(ux_cdf) + curr_z(uz_cdf)
         completed += 1
         return completed
 

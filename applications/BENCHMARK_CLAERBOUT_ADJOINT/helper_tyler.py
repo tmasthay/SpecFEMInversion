@@ -1023,13 +1023,18 @@ if( __name__ == "__main__" ):
                 if( args.misfit != 'sobolev' ):
                     np.save('%s_landscape.npy'%args.misfit, u)
                 else:
-                    nsob = len(ht.sco('find . -name sobolev*.npy', True))
+                    nsob = len(ht.sco("find . -name 'sobolev*.npy'", True))
                     np.save('%s_%d_landscape.npy'%(args.misfit,nsob), u)
             else:
-                u = np.load('%s_landscape.npy'%args.misfit)
+                if( args.misfit != 'sobolev' ):
+                    u = np.load('%s_landscape.npy'%args.misfit)
+                else:
+                    nsob = len(ht.sco("find . -name 'sobolev*.npy'", True))
+                    np.load('sobolev_%d_landscape.npy'%nsob)
+
             plt.clf()
             plt.rcParams['text.usetex'] = True 
-            plt.imshow(u, extent=[100,900,100,900], cmap='jet')
+            plt.imshow(u, extent=[250,900,100,900], cmap='jet')
             if( args.misfit == 'l2' ):
                 plt.title(r'$L^2$')
             elif( args.misfit == 'split' ):
@@ -1043,7 +1048,8 @@ if( __name__ == "__main__" ):
             plt.xlabel('Horizontal Distance (km)')
             plt.ylabel('Depth (km)')
             plt.colorbar()
-            plt.savefig('%s_landscape.pdf'%args.misfit)
+            v = ht.sco('find . -name "%s_landscape*.pdf" | wc -l', True)[0]
+            plt.savefig('%s_landscape_%d.pdf'%(args.misfit, v+1))
     except Exception as e:
         traceback.print_exc()
         exit(-1)
