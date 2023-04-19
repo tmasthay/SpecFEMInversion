@@ -152,6 +152,7 @@ def create_evaluators(
     ot = kw.get('ot', 0.0)
     dt = kw.get('dt', 0.1)
     nt = kw.get('nt', 101)
+    renorm = kw.get('renorm', None)
     S = lambda g : lambda h : sobolev_norm(g-h, s=s, ot=ot, dt=dt, nt=nt)
 
     for i in range(num_recs):
@@ -305,8 +306,13 @@ def create_evaluators(
                 initial=0.0
             )
             evaluators.append([S(ux_cdf), S(uz_cdf)])
+        elif( version.lower() == 'sobolev_multi' ):
+            pass
         else:
             raise ValueError('Mode "%s" not supported'%version)
+    if( version.lower() == 'sobolev_multi' ):
+        S_multi = lambda f : lambda g : sobolev_multi(f,g,s,**kw)
+        evaluators.append([S_multi(data_x), S_multi(data_z)])
     return evaluators
 
 def get_info(f, dx, tau=None, version='split'):
@@ -395,7 +401,8 @@ def wass_landscape(evaluators, **kw):
 
 def wass_landscape_threaded(evaluators, **kw):
     tau = kw.get('tau', 0.01)
-    dt = kw.get('dt', 0.00140)
+    ot = kw.get('ot', 0.0)
+    dt = kw.get('dt', 1.1e-3)
     path = kw.get('path', ht.sco('echo "$SPEC_APP"', True)[0])
     num_shifts = kw.get(
         'num_shifts',
@@ -411,6 +418,7 @@ def wass_landscape_threaded(evaluators, **kw):
     
     # num_recs = kw.get('num_recs', 501)
     version = kw.get('version', 'split')
+    version = version.replace('-', '_')
     # threaded = kw.get('threaded', False)
 
     global completed
@@ -490,6 +498,18 @@ def wass_landscape_threaded(evaluators, **kw):
         completed += 1
         return completed
 
+    def wrapper_sobolev_multi(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        vals[i,j] = evaluators[0][0](ux) + evaluators[0][1](uz)
+        completed += 1
+        return completed
+    
     start_time = time.time()
     if( version.lower() == 'split' ):
         exec_function = wrapper_split
@@ -499,6 +519,8 @@ def wass_landscape_threaded(evaluators, **kw):
         exec_function = wrapper_l2
     elif( version.lower() == 'sobolev' ):
         exec_function = wrapper_sobolev
+    elif( version.lower() == 'sobolev_multi' ):
+        exec_function = wrapper_sobolev_multi
     else:
         raise ValueError('Version "%s" not supported'%version)
 
