@@ -14,8 +14,8 @@ bx = 3000
 az = 500
 bz = 2500
 
-stride_x = 2.5
-stride_z = 2.5
+stride_x = 5
+stride_z = 5
 
 x_max = int(x_max / stride_x)
 z_max = int(z_max / stride_z)
@@ -40,6 +40,7 @@ for iz in range(z_max):
         uz = hf.read_SU_file('ELASTIC/convex_%d_%d/Uz_file_single_d.su'%(ix,iz))
 
         fig = plt.figure(constrained_layout=True, figsize=(20,10))
+
         axs = fig.subplot_mosaic(
             [['Source', 'Source'], ['ux', 'uz']],
             gridspec_kw={'width_ratios': [1,1], 'height_ratios': [1,1]},
@@ -49,29 +50,54 @@ for iz in range(z_max):
             [x[ix]],
             [z[iz]],
             color='red',
-            s=100,
+            s=500,
             marker='*'
+        )
+        axs['Source'].tick_params(
+            axis='x', 
+            which='both', 
+            top=True, 
+            bottom=False, 
+            labelbottom=False, 
+            labeltop=True
         )
 
         axs['ux'].imshow(
-            ux, 
-            extent=[ax,bx,t_min,t_max], 
+            np.transpose(ux), 
+            extent=[bx,ax,t_max,t_min], 
             aspect='auto',
             cmap='jet'
+        )
+        axs['ux'].tick_params(
+            axis='x', 
+            which='both', 
+            top=True, 
+            bottom=False, 
+            labelbottom=False, 
+            labeltop=True
         )
         axs['ux'].set_title(r'$u_x$ for $(s_x,s_z)=(%.1f,%.1f)$'%(x[ix], z[iz]))
         axs['ux'].set_xlabel(r'Offset $x$ (km)')
         axs['ux'].set_ylabel(r'Time (s)')
 
         axs['uz'].imshow(
-            uz, 
-            extent=[ax,bx,t_min,t_max], 
+            np.transpose(uz), 
+            extent=[ax,bx,t_max,t_min], 
             aspect='auto',
             cmap='jet'
+        )
+        axs['uz'].tick_params(
+            axis='x', 
+            which='both', 
+            top=True, 
+            bottom=False, 
+            labelbottom=False, 
+            labeltop=True
         )
         axs['uz'].set_title(r'$u_z$ for $(s_x,s_z)=(%.1f,%.1f)$'%(x[ix], z[iz]))
         axs['uz'].set_xlabel(r'Offset $x$ (km)')
         axs['uz'].set_ylabel(r'Time (s)')
+
 
         plt.savefig('data_%d.jpg'%(k))
         plt.close()
@@ -86,6 +112,6 @@ for iz in range(z_max):
             )
         )
 
-os.system('convert -delay 100 -loop 0 $(ls -t data_*.jpg) output.gif')
+os.system('convert -delay 5 -loop 0 $(ls -t data_*.jpg) output.gif')
 os.system('open output.gif')
 

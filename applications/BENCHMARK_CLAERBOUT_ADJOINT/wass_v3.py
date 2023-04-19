@@ -26,6 +26,30 @@ def sobolev_norm(f, s=0, **kw):
     res = np.trapz(g, dx=dxi)
     return res
 
+def sobolev_multi(f, s=0, **kw):
+    renorm = kw.get('renorm', None)
+    origin = kw['origin']
+    delta = kw['delta']
+    N = kw['N']
+
+    assert( len(origin) == len(f.size) )
+    assert( len(delta) == len(f.size) )
+    assert( len(N) == len(f.size) )
+    if( renorm != None ):
+        F = renorm(f)
+    else:
+        F = [f]
+
+    xi = np.array(
+        [np.fft.fftfreq(N[i], d=delta[i]) for i in range(len(delta))]
+    )
+    scaling = np.exp(-2j * np.pi * origin * xi)
+    for FF in F:
+        np.fft.fftn()
+    
+    
+    
+
 def split_normalize(f, dx):
     f_abs = np.array(np.abs(f), dtype=np.float32)
     pos = 0.5 * (f_abs + f)
@@ -264,12 +288,12 @@ def create_evaluators(
             evaluators.append([wx, wz])
         elif( version.lower() == 'sobolev' ):
             ux_cdf = cumulative_trapezoid(
-                shift_normalize(data_x[i], dx=dt),
+                square_normalize(data_x[i], dx=dt),
                 dx=dt,
                 initial=0.0
             )
             uz_cdf = cumulative_trapezoid(
-                shift_normalize(data_z[i], dx=dt),
+                square_normalize(data_z[i], dx=dt),
                 dx=dt,
                 initial=0.0
             )
@@ -451,8 +475,8 @@ def wass_landscape_threaded(evaluators, **kw):
         for k in range(ux.shape[0]):
             curr_x = evaluators[k][0]
             curr_z = evaluators[k][1]
-            ux_pdf = shift_normalize(ux[k], dx=dt)
-            uz_pdf = shift_normalize(uz[k], dx=dt)
+            ux_pdf = square_normalize(ux[k], dx=dt)
+            uz_pdf = square_normalize(uz[k], dx=dt)
             ux_cdf = cumulative_trapezoid(ux_pdf, dx=dt, initial=0)
             uz_cdf = cumulative_trapezoid(uz_pdf, dx=dt, initial=0)
             vals[i,j] += curr_x(ux_cdf) + curr_z(uz_cdf)
