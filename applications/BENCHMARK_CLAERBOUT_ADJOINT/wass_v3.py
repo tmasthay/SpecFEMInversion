@@ -27,7 +27,6 @@ def sobolev_norm(f, s=0, **kw):
     return res
 
 def sobolev_multi(f, g, s=0, **kw):
-
     assert( len(f.shape) == 2 )
 
     renorm = kw.get('renorm', None)
@@ -39,8 +38,8 @@ def sobolev_multi(f, g, s=0, **kw):
     assert( len(delta) == len(f.shape) )
     assert( len(N) == len(f.shape) )
     if( renorm != None ):
-        F = renorm(f)
-        G = renorm(g)
+        F = renorm(f,delta)
+        G = renorm(g,delta)
     else:
         F = [f]
         G = [g]
@@ -63,7 +62,7 @@ def sobolev_multi(f, g, s=0, **kw):
         )
     return total_sum
 
-def split_normalize(f, dx):
+def split_normalize(f, dx, **kw):
     f_abs = np.array(np.abs(f), dtype=np.float32)
     pos = 0.5 * (f_abs + f)
     neg = pos - f
@@ -75,16 +74,23 @@ def split_normalize(f, dx):
         neg /= c_neg
     return pos,neg
     
-def square_normalize(f, dx, clip_val=None):
+def square_normalize(f, dx, clip_val=None, **kw):
     u = np.array(f**2, dtype=np.float32)
     c = np.trapz(u,dx=dx)
     return u if c == 0 else u / c
 
-def shift_normalize(f, dx):
+def shift_normalize(f, dx, **kw):
     c = np.min(f)
     if( c < 0 ):
         f = f + np.abs(c)
-    c2 = np.trapz(f, dx=dx)
+    if( len(f.shape) == 1 ):
+        c2 = np.trapz(f, dx=dx)
+    else:
+        c2 = np.trapz(f,dx=dx[0],axis=0)
+        i = 1
+        while( int(np.prod(c2.shape)) > 1 ):
+            c2 = np.trapz(c2, dx=dx[i],axis=0)
+            i += 1
     if( c2 > 0 ):
         return f / c2
     else:
@@ -158,6 +164,8 @@ def create_evaluators(
     ot = kw.get('ot', 0.0)
     dt = kw.get('dt', 0.1)
     nt = kw.get('nt', 101)
+    ox = kw.get('ox', 0.0)
+    dx = kw.get('dx', 13.548167)
     renorm = kw.get('renorm', None)
     S = lambda g : lambda h : sobolev_norm(g-h, s=s, ot=ot, dt=dt, nt=nt)
 
@@ -317,8 +325,6 @@ def create_evaluators(
         else:
             raise ValueError('Mode "%s" not supported'%version)
     if( version.lower() == 'sobolev_multi' ):
-        ox = kw.get('ox', 0.0)
-        dx = kw.get('dx', 13.548167)
         kw.update(
             {
                 'origin': np.array([ox, ot]), 
