@@ -1018,7 +1018,7 @@ if( __name__ == "__main__" ):
                     dt=dt,
                     nt=nt,
                     s = args.s,
-                    renorm=shift_normalize
+                    renorm=square_normalize
                 )
                 u = wass_landscape_threaded(evaluators, version=args.misfit)
                 if( args.misfit != 'sobolev' ):

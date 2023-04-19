@@ -76,7 +76,14 @@ def split_normalize(f, dx, **kw):
     
 def square_normalize(f, dx, clip_val=None, **kw):
     u = np.array(f**2, dtype=np.float32)
-    c = np.trapz(u,dx=dx)
+    if( len(f.shape) == 1 ):
+        c = np.trapz(u,dx=dx)
+    else:
+        c = np.trapz(u, dx=dx[0])
+        i = 1
+        while( int(np.prod(c.shape)) > 1 ):
+            c = np.trapz(c, dx=dx[i], axis=0)
+            i += 1 
     return u if c == 0 else u / c
 
 def shift_normalize(f, dx, **kw):
