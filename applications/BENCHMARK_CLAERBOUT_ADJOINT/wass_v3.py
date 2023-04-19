@@ -26,7 +26,7 @@ def sobolev_norm(f, s=0, **kw):
     res = np.trapz(g, dx=dxi)
     return res
 
-def sobolev_multi(f, s=0, **kw):
+def sobolev_multi(f, g, s=0, **kw):
     renorm = kw.get('renorm', None)
     origin = kw['origin']
     delta = kw['delta']
@@ -37,18 +37,25 @@ def sobolev_multi(f, s=0, **kw):
     assert( len(N) == len(f.size) )
     if( renorm != None ):
         F = renorm(f)
+        G = renorm(g)
     else:
         F = [f]
+        G = [g]
 
     xi = np.array(
-        [np.fft.fftfreq(N[i], d=delta[i]) for i in range(len(delta))]
+        [
+            np.fft.fftshift(
+                np.fft.fftfreq(N[i], d=delta[i])
+            ) for i in range(len(delta))
+        ]
     )
-    scaling = np.exp(-2j * np.pi * origin * xi)
-    for FF in F:
-        np.fft.fftn()
-    
-    
-    
+    kernel = (1 + np.abs(xi)**2)**s
+    total_sum = 0.0
+    for FF,GG in zip(F,G):
+        fourier_term = kernel * np.abs(np.fft.fftn(FF - GG))**2 * delta**2
+        for i in len(fourier_term):
+            total_sum += np.trapz(fourier_term, dx=(xi[i][1]-xi[i][0]))
+    return total_sum
 
 def split_normalize(f, dx):
     f_abs = np.array(np.abs(f), dtype=np.float32)
