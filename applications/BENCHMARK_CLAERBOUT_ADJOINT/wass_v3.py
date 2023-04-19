@@ -27,14 +27,17 @@ def sobolev_norm(f, s=0, **kw):
     return res
 
 def sobolev_multi(f, g, s=0, **kw):
+
+    assert( len(f.shape) == 2 )
+
     renorm = kw.get('renorm', None)
     origin = kw['origin']
     delta = kw['delta']
     N = kw['N']
 
-    assert( len(origin) == len(f.size) )
-    assert( len(delta) == len(f.size) )
-    assert( len(N) == len(f.size) )
+    assert( len(origin) == len(f.shape) )
+    assert( len(delta) == len(f.shape) )
+    assert( len(N) == len(f.shape) )
     if( renorm != None ):
         F = renorm(f)
         G = renorm(g)
@@ -42,19 +45,22 @@ def sobolev_multi(f, g, s=0, **kw):
         F = [f]
         G = [g]
 
-    xi = np.array(
+    k = np.fft.fftshift(np.fft.fftfreq(N[0], d=delta[0]))
+    omega = np.fft.fftshift(np.fft.fftfreq(N[1], d=delta[1])) 
+    kernel = np.array(
         [
-            np.fft.fftshift(
-                np.fft.fftfreq(N[i], d=delta[i])
-            ) for i in range(len(delta))
+            [(1 + e_k**2 + e_omega**2)**s for e_omega in omega] \
+                for e_k in k
         ]
     )
-    kernel = (1 + np.abs(xi)**2)**s
     total_sum = 0.0
     for FF,GG in zip(F,G):
-        fourier_term = kernel * np.abs(np.fft.fftn(FF - GG))**2 * delta**2
-        for i in len(fourier_term):
-            total_sum += np.trapz(fourier_term, dx=(xi[i][1]-xi[i][0]))
+        fourier_term = kernel * np.abs(np.fft.fftn(FF-GG))**2 * np.prod(delta)
+        total_sum += np.trapz(
+            np.trapz(fourier_term,dx=delta[0],axis=0),
+            dx=delta[1],
+            axis=0
+        )
     return total_sum
 
 def split_normalize(f, dx):
@@ -311,7 +317,16 @@ def create_evaluators(
         else:
             raise ValueError('Mode "%s" not supported'%version)
     if( version.lower() == 'sobolev_multi' ):
-        S_multi = lambda f : lambda g : sobolev_multi(f,g,s,**kw)
+        ox = kw.get('ox', 0.0)
+        dx = kw.get('dx', 13.548167)
+        kw.update(
+            {
+                'origin': np.array([ox, ot]), 
+                'delta': np.array([dx,dt]),
+                'N': data_x.shape
+            }
+        )
+        S_multi = lambda f : lambda g : sobolev_multi(f,g,**kw)
         evaluators.append([S_multi(data_x), S_multi(data_z)])
     return evaluators
 

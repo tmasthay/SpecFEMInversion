@@ -1049,6 +1049,7 @@ if( __name__ == "__main__" ):
             plt.ylabel('Depth (km)')
             plt.colorbar()
             v = ht.sco('find . -name "%s_landscape*.pdf" | wc -l', True)[0]
+            v = int(v)
             plt.savefig('%s_landscape_%d.pdf'%(args.misfit, v+1))
     except Exception as e:
         traceback.print_exc()
