@@ -1018,7 +1018,7 @@ if( __name__ == "__main__" ):
                     dt=dt,
                     nt=nt,
                     s = args.s,
-                    renorm=square_normalize
+                    renorm=shift_normalize
                 )
                 u = wass_landscape_threaded(evaluators, version=args.misfit)
                 if( args.misfit != 'sobolev' ):
@@ -1035,7 +1035,7 @@ if( __name__ == "__main__" ):
 
             plt.clf()
             plt.rcParams['text.usetex'] = True
-            plt.imshow(u, extent=[1000,3000,500,2500], cmap='jet')
+            plt.imshow(u, extent=[0,4000,0,3000], cmap='jet')
             if( args.misfit == 'l2' ):
                 plt.title(r'$L^2$')
             elif( args.misfit == 'split' ):
