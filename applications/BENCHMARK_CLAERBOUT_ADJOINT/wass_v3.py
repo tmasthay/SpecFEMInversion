@@ -327,7 +327,26 @@ def create_evaluators(
                 dx=dt,
                 initial=0.0
             )
-            evaluators.append([S(ux_cdf), S(uz_cdf)])
+            if( s != 0.0 ):
+                evaluators.append([S(ux_cdf), S(uz_cdf)])
+            else:
+                tau = 0.1
+                u1 = S(ux_cdf)
+                u2 = S(uz_cdf)
+                def u3(g):
+                    a = u1(g)
+                    b = np.sum( (ux_cdf - g)**2 * dt )
+                    assert( np.abs( a - b ) <= tau )
+                    print( 'assert(|%f-%f|=%f <= %f) passed'%(
+                        a,b,np.abs(a-b),tau
+                    ), file=sys.stderr)
+                    return a
+                def u4(g):
+                    a = u2(g)
+                    b = np.sum( (uz_cdf - g)**2 * dt )
+                    assert( np.abs(a - b) <= tau )
+                    return a
+                evaluators.append([u3,u4])
         elif( version.lower() == 'sobolev_multi' ):
             pass
         elif( version.lower() == 'l2' ):
@@ -532,7 +551,10 @@ def wass_landscape_threaded(evaluators, **kw):
             uz_pdf = square_normalize(uz[k], dx=dt)
             ux_cdf = cumulative_trapezoid(ux_pdf, dx=dt, initial=0)
             uz_cdf = cumulative_trapezoid(uz_pdf, dx=dt, initial=0)
-            vals[i,j] += curr_x(ux_cdf) + curr_z(uz_cdf)
+            term1 = curr_x(ux_cdf)
+            term2 = curr_z(uz_cdf)
+            vals[i,j] += term1 + term2
+
         completed += 1
         return completed
 
