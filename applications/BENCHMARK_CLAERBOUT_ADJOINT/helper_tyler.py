@@ -693,6 +693,18 @@ if( __name__ == "__main__" ):
             type=float,
             help='Sobolev smoothing parameter'
         )
+        parser.add_argument(
+            '--stride',
+            default=1,
+            type=int,
+            help='downsampling parameter for landscape plots'
+        )
+        parser.add_argument(
+            '--suffix',
+            default='0',
+            type=str,
+            help='Appending to output file'
+        )
         args = parser.parse_args()
         
         mode = args.mode
@@ -1020,12 +1032,18 @@ if( __name__ == "__main__" ):
                     s = args.s,
                     renorm=square_normalize
                 )
-                u = wass_landscape_threaded(evaluators, version=args.misfit)
+                u = wass_landscape_threaded_low(
+                    evaluators, 
+                    version=args.misfit,
+                    stride=args.stride
+                )
                 if( args.misfit != 'sobolev' ):
                     np.save('%s_landscape.npy'%args.misfit, u)
                 else:
-                    nsob = len(ht.sco("find . -name 'sobolev*.npy'", True))
-                    np.save('%s_%d_landscape.npy'%(args.misfit,nsob), u)
+                    np.save(
+                        '%s_%s_landscape.npy'%(args.misfit,args.suffix), 
+                        u
+                    )
             else:
                 if( args.misfit != 'sobolev' ):
                     u = np.load('%s_landscape.npy'%args.misfit)
@@ -1049,9 +1067,7 @@ if( __name__ == "__main__" ):
             plt.xlabel('Horizontal Distance (km)')
             plt.ylabel('Depth (km)')
             plt.colorbar()
-            v = ht.sco('find . -name "%s_landscape*.pdf" | wc -l', True)[0]
-            v = int(v)
-            plt.savefig('%s_landscape_%d.pdf'%(args.misfit, v+1))
+            plt.savefig('%s_landscape_%s.pdf'%(args.misfit, args.suffix))
     except Exception as e:
         traceback.print_exc()
         exit(-1)

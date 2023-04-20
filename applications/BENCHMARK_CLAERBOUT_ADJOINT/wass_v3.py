@@ -337,9 +337,9 @@ def create_evaluators(
                     a = u1(g)
                     b = np.sum( (ux_cdf - g)**2 * dt )
                     assert( np.abs( a - b ) <= tau )
-                    print( 'assert(|%f-%f|=%f <= %f) passed'%(
-                        a,b,np.abs(a-b),tau
-                    ), file=sys.stderr)
+                    # print( 'assert(|%f-%f|=%f <= %f) passed'%(
+                    #     a,b,np.abs(a-b),tau
+                    # ), file=sys.stderr)
                     return a
                 def u4(g):
                     a = u2(g)
@@ -591,7 +591,152 @@ def wass_landscape_threaded(evaluators, **kw):
     print('TOTAL TIME: %f'%(time.time() - start_time))
     return vals
 
+def wass_landscape_threaded_low(evaluators, **kw):
+    tau = kw.get('tau', 0.01)
+    ot = kw.get('ot', 0.0)
+    dt = kw.get('dt', 1.1e-3)
+    path = kw.get('path', ht.sco('echo "$SPEC_APP"', True)[0])
+    stride = kw.get('stride', 1)
+    num_shifts = kw.get(
+        'num_shifts',
+        1 + np.max(np.array([e.split('_')[1:] for e in 
+            ht.sco('find . -type d -name "convex_[0-9]*_[0-9]*"', True)],
+            dtype=int)
+        )
+    )
+    hf = helper()
+    num_shifts = int(np.ceil(num_shifts / stride))
+    folders = [
+        [
+            '%s/convex_%d_%d'%(path,i*stride,j*stride) \
+                for i in range(num_shifts)
+        ] for j in range(num_shifts)
+    ]
+    vals = np.zeros((num_shifts, num_shifts))
+    
+    # num_recs = kw.get('num_recs', 501)
+    version = kw.get('version', 'split')
+    version = version.replace('-', '_')
+    # threaded = kw.get('threaded', False)
 
+    global completed
+    completed = 0
+
+    def wrapper_split(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
+            curr_xp = evaluators[k][0]
+            curr_xn = evaluators[k][1]
+            curr_zp = evaluators[k][2]
+            curr_zn = evaluators[k][3]
+            uxp_pdf, uxn_pdf = split_normalize(ux[k], dx=dt)
+            uzp_pdf, uzn_pdf = split_normalize(uz[k], dx=dt)
+            v1 = curr_xp(uxp_pdf)
+            v2 = curr_xn(uxn_pdf)
+            v3 = curr_zp(uzp_pdf)
+            v4 = curr_zn(uzn_pdf)
+            vals[i,j] += v1 + v2 + v3 + v4
+        completed += 1
+        return completed
+
+    def wrapper_square(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
+            curr_x = evaluators[k][0]
+            curr_z = evaluators[k][1]
+            ux_pdf = square_normalize(ux[k], dx=dt)
+            uz_pdf = square_normalize(uz[k], dx=dt)
+            vals[i,j] += curr_x(ux_pdf) + curr_z(uz_pdf)
+        completed += 1
+        return completed
+    
+    def wrapper_l2(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        input_path = '%s/convex_reference'%path
+        data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
+        data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
+        for k in range(ux.shape[0]):
+            tmpx = square_normalize(ux[k], dx=dt)
+            tmpz = square_normalize(uz[k], dx=dt)
+            vx = square_normalize(data_x[k], dx=dt)
+            vz = square_normalize(data_z[k], dx=dt)
+            # vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
+            vals[i,j] += np.sum( (vx - tmpx)**2 + (vz - tmpz)**2 )
+        completed += 1
+        return completed
+    
+    def wrapper_sobolev(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        for k in range(ux.shape[0]):
+            curr_x = evaluators[k][0]
+            curr_z = evaluators[k][1]
+            ux_pdf = square_normalize(ux[k], dx=dt)
+            uz_pdf = square_normalize(uz[k], dx=dt)
+            ux_cdf = cumulative_trapezoid(ux_pdf, dx=dt, initial=0)
+            uz_cdf = cumulative_trapezoid(uz_pdf, dx=dt, initial=0)
+            term1 = curr_x(ux_cdf)
+            term2 = curr_z(uz_cdf)
+            vals[i,j] += term1 + term2
+
+        completed += 1
+        return completed
+
+    def wrapper_sobolev_multi(index):
+        global completed
+        i = index // num_shifts
+        j = np.mod(index, num_shifts)
+        fx = '%s/Ux_file_single_d.su'%folders[i][j]
+        fz = '%s/Uz_file_single_d.su'%folders[i][j]
+        ux = hf.read_SU_file(fx)
+        uz = hf.read_SU_file(fz)
+        vals[i,j] = evaluators[0][0](ux) + evaluators[0][1](uz)
+        completed += 1
+        return completed
+    
+    start_time = time.time()
+    if( version.lower() == 'split' ):
+        exec_function = wrapper_split
+    elif( version.lower() == 'square' ):
+        exec_function = wrapper_square
+    elif( version.lower() == 'l2' ):
+        exec_function = wrapper_l2
+    elif( version.lower() == 'sobolev' ):
+        exec_function = wrapper_sobolev
+    elif( version.lower() == 'sobolev_multi' ):
+        exec_function = wrapper_sobolev_multi
+    else:
+        raise ValueError('Version "%s" not supported'%version)
+
+    with ThreadPoolExecutor() as executor:
+        # Use a lambda function to pass additional arguments
+        for res in executor.map(exec_function, range(num_shifts**2)):
+            print(res)
+    print('TOTAL TIME: %f'%(time.time() - start_time))
+    return vals
 
     
         
