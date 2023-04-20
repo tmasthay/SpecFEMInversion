@@ -25,6 +25,7 @@ def sobolev_norm(f, s=0, **kw):
     dxi = xi[1] - xi[0]
     res = np.trapz(g, dx=dxi)
     return res
+    #return res, g, xi
 
 def sobolev_multi(f, g, s=0, **kw):
     assert( len(f.shape) == 2 )
@@ -317,18 +318,21 @@ def create_evaluators(
             evaluators.append([wx, wz])
         elif( version.lower() == 'sobolev' ):
             ux_cdf = cumulative_trapezoid(
-                square_normalize(data_x[i], dx=dt),
+                shift_normalize(data_x[i], dx=dt),
                 dx=dt,
                 initial=0.0
             )
             uz_cdf = cumulative_trapezoid(
-                square_normalize(data_z[i], dx=dt),
+                shift_normalize(data_z[i], dx=dt),
                 dx=dt,
                 initial=0.0
             )
             evaluators.append([S(ux_cdf), S(uz_cdf)])
         elif( version.lower() == 'sobolev_multi' ):
             pass
+        elif( version.lower() == 'l2' ):
+            diff = lambda f : lambda g : np.sum((f-g)**2)
+            evaluators.append([diff(data_x[i]), diff(data_z[i])])
         else:
             raise ValueError('Mode "%s" not supported'%version)
     if( version.lower() == 'sobolev_multi' ):
@@ -503,7 +507,13 @@ def wass_landscape_threaded(evaluators, **kw):
         input_path = '%s/convex_reference'%path
         data_x = hf.read_SU_file('%s/Ux_file_single_d.su'%input_path)
         data_z = hf.read_SU_file('%s/Uz_file_single_d.su'%input_path)
-        vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
+        for k in range(ux.shape[0]):
+            tmpx = square_normalize(ux[k], dx=dt)
+            tmpz = square_normalize(uz[k], dx=dt)
+            vx = square_normalize(data_x[k], dx=dt)
+            vz = square_normalize(data_z[k], dx=dt)
+            # vals[i,j] = np.sum((data_x - ux)**2) + np.sum((data_z - uz)**2)
+            vals[i,j] += np.sum( (vx - tmpx)**2 + (vz - tmpz)**2 )
         completed += 1
         return completed
     
@@ -518,8 +528,8 @@ def wass_landscape_threaded(evaluators, **kw):
         for k in range(ux.shape[0]):
             curr_x = evaluators[k][0]
             curr_z = evaluators[k][1]
-            ux_pdf = square_normalize(ux[k], dx=dt)
-            uz_pdf = square_normalize(uz[k], dx=dt)
+            ux_pdf = shift_normalize(ux[k], dx=dt)
+            uz_pdf = shift_normalize(uz[k], dx=dt)
             ux_cdf = cumulative_trapezoid(ux_pdf, dx=dt, initial=0)
             uz_cdf = cumulative_trapezoid(uz_pdf, dx=dt, initial=0)
             vals[i,j] += curr_x(ux_cdf) + curr_z(uz_cdf)
