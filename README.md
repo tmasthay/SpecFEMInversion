@@ -28,33 +28,11 @@ cd SpecFEMInversion
 
 ## How to Use 
 
-(1) One-dimensional $W_1$ and $W_2$ (trace-by-trace) 
-  - [Yang et al. 2018](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Application+of+optimal+transport+and+the+quadratic+Wasserstein+metric+to+full-waveform+inversion&btnG=)
+```bash
+cd applications/BENCHMARK_CLAERBOUT_ADJOINT
+./helper_tyler.py --help
+```
 
-(2) Huber
-  - [Guitton and Symes 2003](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Guitton%2C+A.%2C+and+W.+W.+Symes%2C+2003%2C+Robust+inversion+of+seismic+data+using+the+Huber+norm%3A+Geophysics&btnG=)
-
-(3) $L^1$-$L^2$ hybrid
-  - [Bube and Langan](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Hybrid+l1%E2%88%95l2+minimization+with+applications+to+tomography&btnG=)
-
-(4) Normalized and unnormalized Sobolev norms
-
-  - [Zhu et al. 2021](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Implicit+regularization+effects+of+the+Sobolev+norms+in+image+processing&btnG=)
-
-## Misfit Functions (roadmap for future)
-
-(1) Fisher-Rao metric
-
-  - [Zhou et al. 2018](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=The+Wasserstein-Fisher-Rao+metric+for+waveform+based+earthquake+location&btnG=)
-
-(2) Graph-space OT
-
-  - [Metivier et al. 2018](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Optimal+transport+for+mitigating+cycle+skipping+in+full-waveform+inversion%3A+A+graph-space+transform+approach&btnG=)
-
-(3) Entropic regularization OT
-
-  - [Cuturi 2013](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Sinkhorn+distances%3A+Lightspeed+computation+of+optimal+transport&btnG=)
-
-(4) Misfits based on reduced-order models
-
-  - [Borcea et al. 2023](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C44&q=Waveform+inversion+via+reduced+order+modeling+borcea&btnG=)
+In the `helper_tyler.py` script, you will see main different options that can be run. The main two options are (a) gradient-descent based inversion for $L^2$,
+$W_2$, or $H^s$ misfits, and (b) generation of full landscapes based on source location (two-layer velocity models planned for future). Option (b) is for 
+pedagogical purposes to study how difficult the underlying optimization problem is for comparison between misfits.
