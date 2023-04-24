@@ -26,7 +26,7 @@ git clone https://github.com/tmasthay/SpecFEMInversion.git
 cd SpecFEMInversion
 ```
 
-## How to Use 
+## How to Use This Software
 
 ```bash
 cd applications/BENCHMARK_CLAERBOUT_ADJOINT
