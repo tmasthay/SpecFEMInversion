@@ -40,7 +40,7 @@ that would be seen when running `./helper_tyler.py --help`
 
 | Option           | Type    | Default       | Description                                             |
 |------------------|---------|---------------|---------------------------------------------------------|
-| mode             | int     | (required)    | Mode of execution (int: 1 <= mode <= 8)                 |
+| mode             | int     | (required)    | Mode of execution (int: 1 <= mode <= 12)                 |
 | --misfit         | str     | "l2"          | Misfit functional, either l2 or w2                      |
 | --plot           | flag    | False         | Perform seismogram plots                                |
 | --num_sources    | int     | 10            | Convexity plot granularity                              |
