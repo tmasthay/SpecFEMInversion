@@ -333,6 +333,41 @@ class ht:
             out_dir='OUTPUT_FILES.syn.backtrack', 
             final_dir='OUTPUT_FILES.syn.forward'
             ):
+        """
+        Perform backtracking line search and update source location.
+        
+        Parameters
+        ----------
+        g : array_like
+            Gradient vector [dg/dx, dg/dz].
+        src_param : dict
+            Dictionary containing source parameters 'xs' and 'zs'.
+        misfit_type : str, optional
+            Misfit type for the adjoint seismogram. Default is 'l2'.
+        c_armijo : float, optional
+            Armijo condition constant. Default is 0.01.
+        alpha0 : float, optional
+            Initial step size for backtracking. Default is 2.0.
+        max_backtrack : int, optional
+            Maximum number of backtracking iterations. Default is 25.
+        src_file : str, optional
+            Path to the source file. Default is 'DATA/SOURCE'.
+        data_dir : str, optional
+            Path to the forward simulation data directory. Default is 'OUTPUT_FILES.dat.forward'.
+        out_dir : str, optional
+            Path to the backtracking output directory. Default is 'OUTPUT_FILES.syn.backtrack'.
+        final_dir : str, optional
+            Path to the final forward simulation output directory. Default is 'OUTPUT_FILES.syn.forward'.
+        
+        Returns
+        -------
+        xs : float
+            Updated source x-coordinate.
+        zs : float
+            Updated source z-coordinate.
+        alpha : float
+            Optimal step size found during backtracking.
+        """
         xs_orig = src_param['xs'][0]
         zs_orig = src_param['zs'][0]
         phi_prime0 = -np.linalg.norm(g)**2
