@@ -786,7 +786,7 @@ if( __name__ == "__main__" ):
             g = ht.src_grad(filenames, src_curr, dt, n=recs)
             src_curr['nreceiversets'] = recs + par_og['nreceiversets'][0]
             ht.backtrack_and_update(g, src_curr, 
-                misfit_type=sys.argv[2].lower(), 
+                misfit_type=args.misfit, 
                 c_armijo=0.0001, 
                 alpha0=2.0)
         elif( mode == 8 ):
