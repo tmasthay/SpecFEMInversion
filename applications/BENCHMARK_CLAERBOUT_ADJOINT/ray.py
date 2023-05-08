@@ -44,6 +44,7 @@ c2 = 'darkorange'
 c3 = 'mediumspringgreen'
 c4 = 'yellow'
 c5 = 'mediumslateblue'
+c6 = 'red'
 setup_gg_plot('black', 'black')
 plt.plot(x, f, label=r'$f$', linestyle='-', color=c1)
 plt.plot(x, g, label=r'$g$', linestyle='-', color=c2)
@@ -77,6 +78,9 @@ add_quant_area = False
 make_squared = False
 add_quant_diff = False
 add_cdf_area = True
+add_sobolev = False
+add_sobolev_area = False
+sob_square = False
 if( add_diff ):
     plt.plot(
         x, 
@@ -117,7 +121,16 @@ if( add_cdfs ):
         color=c5
     )
     if( add_cdf_area ):
-        plt.fill_between(f,F,G,alpha=0.3,color=c3)
+        plt.fill_between(x,F,G,alpha=0.3,color=c3)
+
+if( add_sobolev ):
+    if( sob_square ):
+        plt.plot(x,(F-G)**2,color=c6,label=r'$(F-G)^2$')
+    else:
+        plt.plot(x,F-G,color=c6,label=r'$F-G$')
+    if( add_sobolev_area ):
+        plt.fill_between(x,F-G,alpha=0.3,color=c6)
+
 if( add_quantiles ):
     plt.plot(
         p,
