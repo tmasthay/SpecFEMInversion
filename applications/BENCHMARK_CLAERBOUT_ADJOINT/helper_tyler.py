@@ -755,7 +755,7 @@ if( __name__ == "__main__" ):
             zs = float(sys.argv[3])
             ht.update_source(xs,zs)
         elif( mode == 6 ):
-            perturb_percent = float(sys.argv[2])
+            perturb_percent = float(0.01)
             sp = ht.src_pull()
             xs = sp['xs'][0]
             zs = sp['zs'][0]
